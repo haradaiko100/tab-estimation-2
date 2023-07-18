@@ -35,9 +35,19 @@ def get_start_node_index(tab):
 def get_fingers_distance(note):
     finger_positions = np.argmax(note,axis=1)
 
-    
+    # finger_positionsから開放弦と鳴らしてない弦の情報を削除
+    new_finger_positions = [elem for elem in finger_positions if elem != 0 or elem != 21]
 
-def dijkstra(graph,start_node_index):
+    # 要素ない場合は0を返す
+    if len(new_finger_positions) == 0:
+        return [0,0]
+    
+    max_index = max(new_finger_positions)
+    min_index = min(new_finger_positions)
+
+    return [max_index,min_index]
+
+def dijkstra(graph):
     num_nodes = len(graph) # ここ後で変える
     visited = [False] * num_nodes
     distances = np.inf * np.ones(num_nodes)
@@ -46,7 +56,7 @@ def dijkstra(graph,start_node_index):
     # 3次元の空配列を作成
     converted_tab = np.empty([0,0,0])
 
-    queue = [(0, start_node_index)]
+    queue = [(0, 0)] # (initial_cost,start_node_index)
     
     while queue:
         dist, node = heapq.heappop(queue)
@@ -78,21 +88,37 @@ def estimate_tab_from_pred(tab):
     start_node_index = get_start_node_index(tab)
     prev_fret = start_node_index
 
-    # 同音をノードに追加する
+    # 同音のノードを追加する
     for note in tab:
-        pass
+        
+        current_chord = []
+        # 新しいノードを作る
+        for string in range(num_strings):
+            for fret in range(num_frets):
+                if note[string,fret] == 1:
+                    current_chord.append(string,fret)
 
-    for string in range(num_strings):
-        for fret in range(num_frets):
-            node = string * num_frets + fret
-            for next_string in range(num_strings):
-                for next_fret in range(num_frets):
-                    next_node = next_string * num_frets + next_fret
-                    # distance = abs(fret - next_fret)
-                    distance = abs(prev_fret - (max(g) - min(g) /2)) + (max(g) - min(g))
-                    if max(g) > 7:
-                        distance += 1
-                    graph[node].append((next_node, distance))
+        # 新しいノードを追加する
+        depressing_fingers_dist = get_fingers_distance(tmp_note)
+
+        distance = abs(prev_fret - (depressing_fingers_dist /2)) + (depressing_fingers_dist)
+        if max(depressing_fingers_dist) > 7:
+            distance += 1
+        graph[node].append((next_node, distance))
+
+
+    # for string in range(num_strings):
+    #     for fret in range(num_frets):
+    #         node = string * num_frets + fret
+    #         for next_string in range(num_strings):
+    #             for next_fret in range(num_frets):
+    #                 next_node = next_string * num_frets + next_fret
+    #                 # distance = abs(fret - next_fret)
+    #                 fingers_distance = get_fingers_distance(note)
+    #                 distance = abs(prev_fret - (fingers_distance /2)) + (fingers_distance)
+    #                 if max(g) > 7:
+    #                     distance += 1
+    #                 graph[node].append((next_node, distance))
 
     distances = dijkstra(graph,start_node_index)
 
@@ -104,8 +130,6 @@ def estimate_tab_from_pred(tab):
     #     estimated_tab.append((string, fret, distance))
 
     return estimated_tab
-
-
 
 
 def main():

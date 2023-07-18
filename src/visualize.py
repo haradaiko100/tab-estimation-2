@@ -95,6 +95,7 @@ def visualize(npz_filename_list, kwargs):
             frame_gt = npz_file["frame_tab_gt"]
             note_pred = npz_file["note_tab_pred"]
             note_gt = npz_file["note_tab_gt"]
+            note_graph_pred = npz_file["note_tab_graph_pred"]
             frame_F0_from_tab_pred = npz_file["frame_F0_from_tab_pred"]
             frame_F0_gt = npz_file["frame_F0_gt"]
             note_F0_from_tab_pred = npz_file["note_F0_from_tab_pred"]
@@ -182,6 +183,12 @@ def visualize(npz_filename_list, kwargs):
             plt.subplot(n_subplots, 1, subplot_counter)
             plt.title('Predicted note-level tablature')
             plot_tab(note_pred, note_resolution)
+            subplot_counter = subplot_counter + 1
+
+            # ダイクストラ法の描画用
+            plt.subplot(n_subplots, 1, subplot_counter)
+            plt.title('Predicted graph edited tablature')
+            plot_tab(note_graph_pred, note_resolution)
             subplot_counter = subplot_counter + 1
 
             # frame level F0 converted from tab prediction
