@@ -1,4 +1,5 @@
 import networkx as nx
+import numpy as np
 
 def find_same_notes():
 
@@ -43,9 +44,9 @@ if __name__ == "__main__":
     G = nx.DiGraph()
 
     # ノードを追加し、dataプロパティを設定
-    G.add_node(1, data=[1, 2, 3])
-    G.add_node(2, data=[4, 5, 6])
-    G.add_node(3, data=[7, 8, 9])
+    G.add_node(1, data=np.array([1, 2, 3]))
+    G.add_node(2, data=np.array([4, 5, 6]))
+    G.add_node(3, data=np.array([7, 8, 9]))
 
     # エッジを追加
     G.add_edge(1, 2)
@@ -55,7 +56,7 @@ if __name__ == "__main__":
     # ダイクストラ法で最短経路を求める
     shortest_path = nx.dijkstra_path(G, 1, 3)
     # print(shortest_path)
-    
+    print(G.nodes[1])
     for node in G.nodes():
         node_data = G.nodes[node]
         # time = node_data['time']

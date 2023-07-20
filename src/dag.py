@@ -21,7 +21,7 @@ def get_same_note_nodes(note:np.ndarray) -> np.ndarray:
 
 
 
-def get_fingers_distance(note:np.ndarray):
+def get_fingers_distance_dict(note:np.ndarray):
 
     # 各弦の押している位置を取得
     finger_positions = np.argmax(note,axis=1)
@@ -31,32 +31,48 @@ def get_fingers_distance(note:np.ndarray):
 
     # 要素ない場合は0を返す
     if len(new_finger_positions) == 0:
-        return [0,0]
+        return {
+            "max":0,
+            "min":0,
+        }
     
     max_index = max(new_finger_positions)
     min_index = min(new_finger_positions)
 
-    return [max_index,min_index]
+    return {
+        "max":max_index,
+        "min":min_index,
+    }
 
-
+# カウントの情報とdataのnumpy配列を返す
 def get_same_time_nodes_from_graph(graph,target_time):
-    same_time_nodes = []
+    # same_time_nodes = np.empty([0,0,0])
+    same_time_nodes_info = []
     for node in graph.nodes():
         if 'time' in graph.nodes[node] and graph.nodes[node]['time'] == target_time:
-            node_info = graph.nodes[node]
-            same_time_nodes.append(node)
+            node_chord_info = graph.nodes[node]["data"]
+            
+            same_time_nodes_info.append({
+                "data":node_chord_info,
+                "count":node,
+                })
 
-    return same_time_nodes
+            # same_time_nodes.append(node_chord_info)
+            # np.append(same_time_nodes,node_chord_info,axis=0)
+
+    return same_time_nodes_info
 
 
 def calc_weight_between_notes(prev_note:np.ndarray,current_note:np.ndarray):
 
-    current_depressing_fingers_dist = get_fingers_distance(current_note)
-    prev_depressing_fingers_dist = get_fingers_distance(prev_note)
+    current_fingers_dict = get_fingers_distance_dict(current_note)
+    prev_fingers_dict = get_fingers_distance_dict(prev_note)
 
-    prev_fret =  sum(prev_depressing_fingers_dist) / len(prev_depressing_fingers_dist)
-    weight = abs(prev_fret - (current_depressing_fingers_dist /2)) + (current_depressing_fingers_dist)
-    if max(current_depressing_fingers_dist) > 7:
+    current_fingers_distance = current_fingers_dict["max"] - current_fingers_dict["min"]
+
+    prev_fret =  sum(prev_fingers_dict.values()) / len(prev_fingers_dict)
+    weight = abs(prev_fret - (current_fingers_distance /2)) + (current_fingers_distance)
+    if max(current_fingers_dict["max"]) > 7:
         weight += 1
 
     return weight
@@ -64,34 +80,34 @@ def calc_weight_between_notes(prev_note:np.ndarray,current_note:np.ndarray):
 
 def estimate_tab_from_pred(tab:np.ndarray):
     DG = nx.DiGraph()
-    graph = np.empty([0,0,0])
     current_time = 0
     prev_time = 0
     node_count = 0
 
-    # 現時刻の音について
     for note in tab:
-
-        # get_same_note_nodes内でありえないノードは含まれないようにしたい
-        same_note_nodes = get_same_note_nodes(note)
-
-        # for node in same_note_nodes:
-        #     DG.add_node(node_count, data=data,time=current_time)
-        #     node_count += 1
-
-        # グラフにノード追加
-        for i in range(len(same_note_nodes)):
-            DG.add_node(node_count,data=same_note_nodes[i],time=current_time,count=node_count)
+        
+        if current_time == 0:
+            DG.add_node(node_count,data=note,time=current_time,count=node_count)
             node_count += 1
 
-        # エッジ追加
-        if current_time != 0:
+        else:
+            # get_same_note_nodes内でありえないノードは含まれないようにしたい
+            same_note_nodes = get_same_note_nodes(note) # numpyの配列
             prev_time_nodes = get_same_time_nodes_from_graph(DG,prev_time)
 
-            for current_node in same_note_nodes:
-                for prev_node in prev_time_nodes:
-                    weight = calc_weight_between_notes(current_note=current_node,prev_note=prev_node)
-                    DG.add_edge(DG.nodes[prev_node]["count"],DG.nodes[current_node]["count"],weight=weight)
+            # グラフにノード追加
+            for i in range(len(same_note_nodes)):
+                DG.add_node(node_count,data=same_note_nodes[i],time=current_time,count=node_count)
+
+                # エッジ追加
+                for current_node in same_note_nodes:
+                    for prev_node in prev_time_nodes:
+                        weight = calc_weight_between_notes(current_note=current_node,prev_note=prev_node["data"])
+                        DG.add_edge(node_count,prev_node["count"],weight=weight)
+                
+                # エッジ追加後にインクリメント
+                node_count += 1
+
 
         # 時間をインクリメント
         prev_time = current_time
