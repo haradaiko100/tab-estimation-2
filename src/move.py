@@ -183,8 +183,32 @@ def get_same_note_positions(note):
 
     return same_note_list
 
+
 def get_same_note_nodes(note):
-    
+    num_strings = 6  # 弦の数
+
+    muted_strings_num = np.sum(note[:, -1])
+    sounding_strings_num = num_strings - muted_strings_num
+
+    same_note_nodes = []
+    same_note_nodes.append(note)
+
+    if sounding_strings_num == 1:
+        same_note_with_one_move = get_same_note_with_one_move(note)
+        for i in range(len(same_note_with_one_move)):
+            same_note_nodes.append(same_note_with_one_move[i])
+
+    elif sounding_strings_num >= 2:
+        same_note_with_one_move = get_same_note_with_one_move(note)
+        for i in range(len(same_note_with_one_move)):
+            same_note_nodes.append(same_note_with_one_move[i])
+
+        same_note_positions = get_same_note_positions(note)
+        for i in range(len(same_note_positions)):
+            same_note_nodes.append(same_note_positions[i])
+
+    return same_note_nodes
+
 
 if __name__ == "__main__":
     # グラフを作成
@@ -224,5 +248,5 @@ if __name__ == "__main__":
         ]
     )
 
-    same_note = get_same_note_with_one_move(input_array)
-    same_note_positions = get_same_note_positions(input_array)
+    # result = get_same_note_nodes(input_array)
+    # print(len(result))

@@ -1,3 +1,4 @@
+from move import get_same_note_nodes
 import numpy as np
 import librosa
 import librosa.display
@@ -15,39 +16,6 @@ from itertools import repeat
 import tqdm
 
 import networkx as nx
-
-
-def get_same_note_nodes(note: np.ndarray) -> np.ndarray:
-    num_strings = 6  # 弦の数
-    num_frets = 21  # フレットの数
-
-    same_note_nodes = np.empty([0, 0, 0])
-
-    # 21列目にある1の数を取得
-    muted_strings_num = np.sum(note[:, 20])
-
-    # なっている音の数
-    sounding_strings_num = num_strings - muted_strings_num
-
-    # 音のずらす数によってパターンを数え上げる
-    for i in range(1, sounding_strings_num + 1):
-        # 上方向への移動
-        upwards_shift = 0
-
-        # 下方向への移動
-        downwards_shift = 0
-
-        # ずらしたときに鳴らしていない弦(21)があったとき
-
-        # ずらしたときに他の鳴らしている弦(0～20)があったとき
-
-        # 1弦か6弦のどちらかに2つの音がnumpy配列内に入っていた場合はノードとして追加しない
-
-        # 指の距離が5以上のノードは登録しないようにする
-
-        # np.append(same_note_nodes,node_chord_info,axis=0)
-
-    return same_note_nodes
 
 
 def save_notes(test_num, graph_tab_data):
@@ -144,7 +112,7 @@ def calc_weight_between_notes(prev_note: np.ndarray, current_note: np.ndarray):
         weight = abs(prev_fret - (current_fingers_distance / 2)) + (
             current_fingers_distance
         )
-        if current_fingers_dict["max"] > 7:  
+        if current_fingers_dict["max"] > 7:
             weight += 1
 
     return weight
