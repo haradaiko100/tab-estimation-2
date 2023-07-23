@@ -43,6 +43,8 @@ def get_same_note_nodes(note: np.ndarray) -> np.ndarray:
 
         # 1弦か6弦のどちらかに2つの音がnumpy配列内に入っていた場合はノードとして追加しない
 
+        # 指の距離が5以上のノードは登録しないようにする
+
         # np.append(same_note_nodes,node_chord_info,axis=0)
 
     return same_note_nodes
@@ -142,7 +144,7 @@ def calc_weight_between_notes(prev_note: np.ndarray, current_note: np.ndarray):
         weight = abs(prev_fret - (current_fingers_distance / 2)) + (
             current_fingers_distance
         )
-        if max(current_fingers_dict["max"]) > 7:
+        if current_fingers_dict["max"] > 7:  
             weight += 1
 
     return weight

@@ -3,7 +3,6 @@ import numpy as np
 
 
 def find_same_notes():
-
     a = [21, 21, 7, 7, 21, 7]
     results = [a]
 
@@ -14,7 +13,7 @@ def find_same_notes():
         2: [(3, -5), (1, +5)],
         3: [(4, -4), (2, +5)],
         4: [(5, -5), (3, +4)],
-        5: [(4, +5)]
+        5: [(4, +5)],
     }
 
     for i in range(len(a)):
@@ -40,15 +39,55 @@ def find_same_notes():
 
     # print(result)
 
-def get_positions_with_ones(array:np.ndarray):
+
+def shift_positions(array):
+    shifted_array = np.zeros_like(array)
+    for i in range(array.shape[0] - 1):
+        row = array[i]
+        # print("${0} : ${1}".format(i,row))
+        next_row = array[i + 1]
+        if row[-1] == 1:
+            continue
+
+        # 一つ下の行の1の位置をずらし、列を左に5ずらす
+        positions = np.where(row == 1)[0]
+        shifted_positions = positions + 5
+        shifted_positions[shifted_positions >= array.shape[1] - 1] = array.shape[1] - 1
+
+        # 一つ下の行の対応する位置に1を配置
+        next_row[shifted_positions] = 1
+        shifted_array[i + 1] = next_row
+
+    # 各行について1が複数個ある場合、インデックスが20が含まれない場合、ずらす操作をする前にあった1について(a)を行う
+    for i in range(array.shape[0]):
+        row = array[i]
+        if np.sum(row) > 1 and row[-1] != 1:
+            positions = np.where(row == 1)[0]
+            shifted_positions = positions + 5
+            shifted_positions[shifted_positions >= array.shape[1] - 1] = (
+                array.shape[1] - 1
+            )
+            row[shifted_positions] = 0
+
+    return shifted_array
+
+
+def shift_string_positions(note, shift_position_num):
+    num_strings = 6
+    for start_guitar_string in range(num_strings):
+        for current_string in range(num_strings):
+            pass
+
+
+def get_positions_with_ones(array: np.ndarray):
     positions_with_ones = []
     for row in array:
         positions = np.where(row == 1)[0]
         positions_with_ones.append(positions)
     return positions_with_ones
 
-def get_note_in_npz(note):
 
+def get_same_note_in_npz(note):
     num_strings = 6  # 弦の数
     num_frets = 21  # フレットの数
 
@@ -57,18 +96,33 @@ def get_note_in_npz(note):
     # 21列目にある1の数を取得
     muted_strings_num = np.sum(note[:, 20])
 
-    # なっている音の数
+    # 鳴っている音の数
     sounding_strings_num = num_strings - muted_strings_num
 
-    # 音のずらす数によってパターンを数え上げる
-    for i in range(1, sounding_strings_num+1):
+    # 音が鳴っていないとき or 全ての弦が鳴っているとき
+    if sounding_strings_num == 0 or sounding_strings_num == num_strings:
+        return note
 
-        for j in range(num_strings):
-            if 
+    # 音のずらす数によってパターンを数え上げる
+    for shift_position_num in range(1, sounding_strings_num + 1):
+        # start_guitar_stringは移動を最初にする弦
+        for start_guitar_string in range(num_strings):
+            sounding_position = np.where(note[start_guitar_string] == 1)[0]
+
+            # ミュートしているだけの場合はスキップ
+            if len(sounding_position) == 1 and note[start_guitar_string][-1] == 1:
+                continue
+
+            # まずはdownwards_shiftを実装していく
+
+            note[start_guitar_string + 1][sounding_position - 5] = note[
+                start_guitar_string
+            ][sounding_position]
+
+            note[start_guitar_string][sounding_position] = 0
 
 
 if __name__ == "__main__":
-
     # グラフを作成
     G = nx.DiGraph()
 
@@ -85,29 +139,119 @@ if __name__ == "__main__":
     # ダイクストラ法で最短経路を求める
     shortest_path = nx.dijkstra_path(G, 1, 3)
     # print(shortest_path)
-    print(G.nodes[1])
+    # print(G.nodes[1])
     for node in G.nodes():
         node_data = G.nodes[node]
         # time = node_data['time']
-        data = node_data['data']
+        data = node_data["data"]
         # print(node)
         # print(data)
     # 経路に含まれるノードのdataプロパティを一つの配列にまとめる
-    data_list = [G.nodes[node]['data'] for node in shortest_path]
+    data_list = [G.nodes[node]["data"] for node in shortest_path]
 
     # 結果を出力
     # print(data_list)
-    array = np.array([
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
-    ])
+    array = np.array(
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        ]
+    )
 
-    print(array[0][20])
+    result = get_positions_with_ones(array)
+    print(result)
     # 21列目にある1の数を取得
     ones_count = np.sum(array[:, 20])
+
+    input_array = np.array(
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        ]
+    )
+    print(input_array)
+
+    # downwards_shift
+    results = []
+    for shift_position_num in range(1, 3 + 1):
+        if shift_position_num == 1:
+            for start_string in range(6 - 1):
+                copied_array = np.copy(input_array)
+                sounding_position = np.where(copied_array[start_string] == 1)[0]
+                # print(sounding_position)
+                # 移動する回数が1だったら、今いる弦とstartの弦が同じになるからこれでいい
+                if len(sounding_position) == 1 and copied_array[start_string][-1] == 1:
+                    continue
+
+                if start_string == 3:
+                    if sounding_position[0] - 4 < 0:
+                        continue
+
+                    # 3→2弦の移動は-4
+                    # copied_array[start_string][sounding_position[0]]
+                    copied_value = np.copy(
+                        copied_array[start_string, sounding_position[0]]
+                    )
+                    copied_array[start_string + 1][
+                        sounding_position[0] - 4
+                    ] = copied_value
+
+                    # 移動先の弦が元々ミュートしていた場合、そのフレット情報を更新する
+                    if copied_array[start_string + 1][-1] == 1:
+                        copied_array[start_string + 1][-1] = 0
+
+                    # 移動元の弦の状態を更新する
+                    copied_array[start_string][sounding_position[0]] = 0
+                    copied_array[start_string][-1] = 1
+
+                    # print(copied_array)
+                else:
+                    # 3→2弦の移動以外は-5
+                    if sounding_position[0] - 5 < 0:
+                        continue
+
+                    copied_value = np.copy(
+                        copied_array[start_string, sounding_position[0]]
+                    )
+                    copied_array[start_string + 1][
+                        sounding_position[0] - 5
+                    ] = copied_value
+
+                    # 移動先の弦が元々ミュートしていた場合、そのフレット情報を更新する
+                    if copied_array[start_string + 1][-1] == 1:
+                        copied_array[start_string + 1][-1] = 0
+
+                    # 移動元の弦の状態を更新する
+                    copied_array[start_string][sounding_position[0]] = 0
+                    copied_array[start_string][-1] = 1
+
+                    # print(copied_array)
+
+                moved_string_position = np.where(copied_array[start_string + 1] == 1)[0]
+                print(
+                    "moved_string: {0} , positions: {1}".format(
+                        start_string + 1, moved_string_position
+                    )
+                )
+                # 移動先の弦のなっている箇所が1つだけだったら追加する
+                if len(moved_string_position) == 1:
+                    results.append(copied_array)
+
+    print(results)
+    # input_array[2][3] = input_array[1][7]
+    # input_array[1][7] = 0
+    # print(input_array)
+
+    # print(input_array[1]) # input_array[0] → 0行目
+    # result_array = shift_positions(input_array)
+    # print(result_array)
 
     # print("21列目にある1の数:", ones_count)
