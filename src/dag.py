@@ -89,9 +89,6 @@ def get_same_time_nodes_from_graph(graph, target_time):
                 }
             )
 
-            # same_time_nodes.append(node_chord_info)
-            # np.append(same_time_nodes,node_chord_info,axis=0)
-
     return same_time_nodes_info
 
 
@@ -122,7 +119,7 @@ def estimate_tab_from_pred(tab: np.ndarray):
     DG = nx.DiGraph()
     current_time = 0
     prev_time = 0
-    node_count = 0
+    node_count = 1
 
     for note in tab:
         if current_time == 0:
@@ -149,7 +146,7 @@ def estimate_tab_from_pred(tab: np.ndarray):
                         weight = calc_weight_between_notes(
                             current_note=current_node, prev_note=prev_node["data"]
                         )
-                        DG.add_edge(node_count, prev_node["count"], weight=weight)
+                        DG.add_edge(prev_node["count"], node_count, weight=weight)
 
                 # エッジ追加後にインクリメント
                 node_count += 1
@@ -158,7 +155,9 @@ def estimate_tab_from_pred(tab: np.ndarray):
         prev_time = current_time
         current_time += 1
 
-    shortest_path = nx.dijkstra_path(DG, 0, node_count, weight="weight")
+    shortest_path = nx.dijkstra_path(
+        G=DG, source=1, target=node_count - 1, weight="weight"
+    )
 
     # shortest_pathの実際のデータを取得する
     note_list = [DG.nodes[node]["data"] for node in shortest_path]
@@ -194,7 +193,6 @@ if __name__ == "__main__":
     npz_data = np.load(npz_filename_list[3])
     # print(npz_filename_list[3])
     note_pred = npz_data["note_tab_pred"]
-    # print(len(note_pred))
-    # print(note_pred[3].shape)
-    print(note_pred.shape)
+
     estimated_tab = estimate_tab_from_pred(note_pred)
+    print(estimated_tab)
