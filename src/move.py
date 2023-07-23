@@ -181,50 +181,91 @@ if __name__ == "__main__":
 
     # downwards_shift
     results = []
-    for shift_position_num in range(1, 3 + 1):
-        if shift_position_num == 1:
-            for start_string in range(6 - 1):
-                copied_array = np.copy(input_array)
-                sounding_position = np.where(copied_array[start_string] == 1)[0]
-                # print(sounding_position)
-                # 移動する回数が1だったら、今いる弦とstartの弦が同じになるからこれでいい
-                if len(sounding_position) == 1 and copied_array[start_string][-1] == 1:
-                    continue
+    for start_string in range(6 - 1):
+        copied_array = np.copy(input_array)
+        sounding_position = np.where(copied_array[start_string] == 1)[0]
+        # print(sounding_position)
 
-                # 3→2弦の移動は-4、それ以外は-5
-                parallel_move_dist = 4 if start_string == 3 else 5
+        if len(sounding_position) == 1 and copied_array[start_string][-1] == 1:
+            continue
 
-                if sounding_position[0] - parallel_move_dist < 0:
-                    continue
+        # 3→2弦の移動は-4、それ以外は-5
+        parallel_move_dist = 4 if start_string == 3 else 5
+        if sounding_position[0] - parallel_move_dist < 0:
+            continue
 
-                copied_value = np.copy(copied_array[start_string, sounding_position[0]])
-                copied_array[start_string + 1][
-                    sounding_position[0] - parallel_move_dist
-                ] = copied_value
+        # 一つ下の弦に音を移動させる
+        copied_value = np.copy(copied_array[start_string, sounding_position[0]])
+        copied_array[start_string + 1][
+            sounding_position[0] - parallel_move_dist
+        ] = copied_value
 
-                # 移動先の弦が元々ミュートしていた場合、そのフレット情報を更新する
-                if copied_array[start_string + 1][-1] == 1:
-                    copied_array[start_string + 1][-1] = 0
+        # 移動先の弦が元々ミュートしていた場合、そのフレット情報を更新する
+        if copied_array[start_string + 1][-1] == 1:
+            copied_array[start_string + 1][-1] = 0
 
-                # 移動元の弦の状態を更新する
-                copied_array[start_string][sounding_position[0]] = 0
-                copied_array[start_string][-1] = 1
+        # 移動元の弦の状態を更新する
+        copied_array[start_string][sounding_position[0]] = 0
+        copied_array[start_string][-1] = 1
 
-                moved_string_position = np.where(copied_array[start_string + 1] == 1)[0]
-                print(
-                    "moved_string: {0} , positions: {1}".format(
-                        start_string + 1, moved_string_position
-                    )
-                )
-                # 移動先の弦のなっている箇所が1つだけだったら追加する
-                if len(moved_string_position) == 1:
-                    results.append(copied_array)
+        moved_string_position = np.where(copied_array[start_string + 1] == 1)[0]
+        # print(
+        #     "moved_string: {0} , positions: {1}".format(
+        #         start_string + 1, moved_string_position
+        #     )
+        # )
+        # 移動先の弦のなっている箇所が1つだけだったら追加する
+        if len(moved_string_position) == 1:
+            results.append(copied_array)
+
+    # print(results)
+
+    # upwards_shift
+    for start_string in range(6 - 1):
+        reversed_copied_array = np.copy(input_array)[::-1]
+        sounding_position = np.where(reversed_copied_array[start_string] == 1)[0]
+        # print(sounding_position)
+
+        if len(sounding_position) == 1 and reversed_copied_array[start_string][-1] == 1:
+            continue
+
+        # 2→3弦の移動は+4、それ以外は+5
+        parallel_move_dist = 4 if start_string == 1 else 5
+
+        if sounding_position[0] + parallel_move_dist > 20:
+            continue
+
+        # 一つ下の弦に音を移動させる
+        copied_value = np.copy(
+            reversed_copied_array[start_string, sounding_position[0]]
+        )
+
+        reversed_copied_array[start_string + 1][
+            sounding_position[0] + parallel_move_dist
+        ] = copied_value
+
+        # 移動先の弦が元々ミュートしていた場合、そのフレット情報を更新する
+        if reversed_copied_array[start_string + 1][-1] == 1:
+            reversed_copied_array[start_string + 1][-1] = 0
+
+        # 移動元の弦の状態を更新する
+        reversed_copied_array[start_string][sounding_position[0]] = 0
+        reversed_copied_array[start_string][-1] = 1
+
+        moved_string_position = np.where(reversed_copied_array[start_string + 1] == 1)[
+            0
+        ]
+        # print(
+        #     "moved_string: {0} , positions: {1}".format(
+        #         start_string + 1, moved_string_position
+        #     )
+        # )
+        # 移動先の弦のなっている箇所が1つだけだったら追加する
+        if len(moved_string_position) == 1:
+            # 逆順にして元に戻す
+            results.append(reversed_copied_array[::-1])
 
     print(results)
-    # input_array[2][3] = input_array[1][7]
-    # input_array[1][7] = 0
-    # print(input_array)
-
     # print(input_array[1]) # input_array[0] → 0行目
     # result_array = shift_positions(input_array)
     # print(result_array)
