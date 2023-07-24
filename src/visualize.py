@@ -259,11 +259,12 @@ def visualize(npz_filename_list, kwargs):
         # plotting
         frames_per_second = hop_length / down_sampling_rate
         frames_to_sec_labels = np.arange(len(frame_gt)) / frames_per_second
-        n_subplots = (
-            (3 + encoder_layers * encoder_heads)
-            if mode == "F0"
-            else (5 + encoder_layers * encoder_heads)
-        )
+        # n_subplots = (
+        #     (3 + encoder_layers * encoder_heads)
+        #     if mode == "F0"
+        #     else (5 + encoder_layers * encoder_heads)
+        # )
+        n_subplots = 8
 
         plt.figure(figsize=(10, n_subplots * 3), dpi=200)
         plt.rc("axes", labelsize=15)
@@ -402,26 +403,6 @@ def visualize(npz_filename_list, kwargs):
             subplot_counter = subplot_counter + 1
 
             # ここから下はグラフF0の出力
-            # frame level F0 converted from tab_graph prediction
-            # plt.subplot(n_subplots, 1, subplot_counter)
-            # plt.title("Frame-level F0 converted from Tab graph estimation")
-            # librosa.display.specshow(
-            #     (frame_F0_gt * 0.4 + frame_F0_from_tab_graph_pred).T,
-            #     x_axis="time",
-            #     y_axis=None,
-            #     sr=down_sampling_rate,
-            #     hop_length=hop_length,
-            #     cmap="hot",
-            # )
-            # plt.yticks([8, 20, 32], ["C3", "C4", "C5"])
-            # plt.ylabel("pitch")
-            # TP_patch = mpatches.Patch(color="white", label="TP")
-            # FP_patch = mpatches.Patch(color="yellow", label="FP")
-            # FN_patch = mpatches.Patch(color="red", label="FN")
-            # plt.legend(handles=[TP_patch, FP_patch, FN_patch])
-            # plt.xlabel("Tims [s]")
-            # subplot_counter = subplot_counter + 1
-
             # note level F0 converted from tab_graph prediction
             plt.subplot(n_subplots, 1, subplot_counter)
             plt.title("Note-level F0 converted fron Tab graph estimation")

@@ -1,4 +1,4 @@
-from turtle import pd
+import pandas as pd
 from move import get_same_note_nodes
 import numpy as np
 import librosa
@@ -20,15 +20,19 @@ import tqdm
 import networkx as nx
 
 
-def save_npz_notes(npz_file_path, graph_tab_data):
+def save_npz_notes(npz_file_path, graph_tab_data, note_F0_from_tab_graph_pred):
     # 既存のnpzファイルを読み込む
     existing_data = np.load(npz_file_path)
 
-    # 新しいデータを追加する
-    existing_data["note_tab_graph_pred"] = graph_tab_data
+    # 既存のデータを新しい辞書にコピー
+    new_data = {key: existing_data[key] for key in existing_data.files}
 
-    # 追加したデータを含む新しいnpzファイルを保存する
-    np.savez_compressed(npz_file_path, **existing_data)
+    # 新しいデータを追加する
+    new_data["note_tab_graph_pred"] = graph_tab_data
+    new_data["note_F0_from_tab_graph_pred"] = note_F0_from_tab_graph_pred
+
+    # 新しい辞書を含む新しいnpzファイルを保存する
+    np.savez_compressed(npz_file_path, **new_data)
 
     return
 
@@ -178,22 +182,28 @@ def estimate_and_save_tab_in_npz(npz_filename_list, test_num):
         # ex) npz_file: result/tab/202304241804_epoch192/npz/test_02/02_Funk1-97-C_comp_01.npz
         npz_data = np.load(npz_file)
         note_pred = npz_data["note_tab_pred"]
+        note_gt = npz_data["note_tab_gt"]
         estimated_tab = estimate_tab_from_pred(note_pred)
-        save_npz_notes(npz_file_path=npz_file, graph_tab_data=estimated_tab)
+        note_F0_from_tab_graph_pred = tab2pitch(note_pred)
+        save_npz_notes(
+            npz_file_path=npz_file,
+            graph_tab_data=estimated_tab,
+            note_F0_from_tab_graph_pred=note_F0_from_tab_graph_pred,
+        )
 
         frame_pred = npz_data["frame_tab_pred"]
         frame_gt = npz_data["frame_tab_gt"]
 
+        note_F0_gt = npz_data["note_F0_gt"]
+
         frame_pred = frame_pred[:, :, :-1].flatten()
         frame_gt = frame_gt[:, :, :-1].flatten()
+        note_pred = note_pred[:, :, :-1].flatten()
+        note_gt = note_gt[:, :, :-1].flatten()
 
-        note_F0_gt = npz_data["note_F0_gt"]
-        note_gt = npz_data["note_tab_gt"]
-        note_F0_from_tab_graph_pred = tab2pitch(note_pred)
         note_F0_from_tab_graph_pred = note_F0_from_tab_graph_pred.flatten()
 
         note_F0_gt = note_F0_gt.flatten()
-        note_gt = note_gt[:, :, :-1].flatten()
 
         frame_concat_pred = np.concatenate((frame_concat_pred, frame_pred), axis=None)
         frame_concat_gt = np.concatenate((frame_concat_gt, frame_gt), axis=None)

@@ -99,6 +99,7 @@ def main():
         # p.close()  # or p.terminate()
         # p.join()
 
+
 # 1曲のタブ譜の各フレームにおいて、なっている音の高さ(pitch)を算出する
 def tab2pitch(tab):
     rel_string_pitches = [0, 5, 10, 15, 19, 24]
@@ -110,6 +111,7 @@ def tab2pitch(tab):
                 pitch[time, argmax_index[time, string] + rel_string_pitches[string]] = 1
 
     return pitch
+
 
 if __name__ == "__main__":
     # main()
@@ -140,7 +142,7 @@ if __name__ == "__main__":
     npz_data = np.load(npz_filename_list[2])
     print(npz_filename_list[2])
     note_pred = npz_data["note_tab_pred"]
-    print(npz_data["note_F0_gt"].shape)
+    print(npz_data["note_tab_gt"].shape)
     # frame_pred = npz_data["frame_tab_pred"]
     # print(frame_pred.shape)
     print(note_pred.shape)
@@ -152,4 +154,3 @@ if __name__ == "__main__":
     # print(result[20])
     # print(note_pred[3].shape)
     # print(note_pred.shape)
-
