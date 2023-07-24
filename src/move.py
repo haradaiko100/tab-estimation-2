@@ -236,7 +236,10 @@ if __name__ == "__main__":
         # print(data)
     # 経路に含まれるノードのdataプロパティを一つの配列にまとめる
     data_list = [G.nodes[node]["data"] for node in shortest_path]
-    print(data_list)
+    print(type(data_list).__module__ == "numpy")
+    npz_data_list = np.array(data_list)
+    print(type(npz_data_list).__module__ == "numpy")
+
 
     input_array = np.array(
         [

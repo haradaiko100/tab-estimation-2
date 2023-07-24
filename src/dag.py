@@ -162,7 +162,10 @@ def estimate_tab_from_pred(tab: np.ndarray):
     # shortest_pathの実際のデータを取得する
     note_list = [DG.nodes[node]["data"] for node in shortest_path]
 
-    return note_list
+    # ndarrayに変換
+    npz_note_list = np.array(note_list)
+
+    return npz_note_list
 
 
 if __name__ == "__main__":
