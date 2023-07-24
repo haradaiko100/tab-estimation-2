@@ -99,6 +99,17 @@ def main():
         # p.close()  # or p.terminate()
         # p.join()
 
+# 1曲のタブ譜の各フレームにおいて、なっている音の高さ(pitch)を算出する
+def tab2pitch(tab):
+    rel_string_pitches = [0, 5, 10, 15, 19, 24]
+    argmax_index = np.argmax(tab, axis=2)
+    pitch = np.zeros((len(tab), 44))
+    for time in range(len(tab)):
+        for string in range(6):
+            if argmax_index[time, string] < 20:
+                pitch[time, argmax_index[time, string] + rel_string_pitches[string]] = 1
+
+    return pitch
 
 if __name__ == "__main__":
     # main()
@@ -126,10 +137,19 @@ if __name__ == "__main__":
     #         os.path.join(npz_dir, f"test_0{test_num}", "*"))
     npz_filename_list = glob.glob(os.path.join(npz_dir, "test_00", "*"))
 
-    npz_data = np.load(npz_filename_list[3])
-    # print(npz_filename_list[3])
+    npz_data = np.load(npz_filename_list[2])
+    print(npz_filename_list[2])
     note_pred = npz_data["note_tab_pred"]
-    # print(len(note_pred))
-    # print(note_pred[3].shape)
+    print(npz_data["note_F0_gt"].shape)
+    # frame_pred = npz_data["frame_tab_pred"]
+    # print(frame_pred.shape)
     print(note_pred.shape)
-    estimated_tab = estimate_tab_from_pred(note_pred)
+    # print(note_pred[20])
+    # note_f0 = npz_data["note_F0_from_tab_pred"] # 2次元配列 64×44形式 44はギターで出せる音の高さの数
+    # print(note_f0[5])
+    # result = tab2pitch(note_pred)
+    # print(result.shape)
+    # print(result[20])
+    # print(note_pred[3].shape)
+    # print(note_pred.shape)
+

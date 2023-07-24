@@ -1,3 +1,4 @@
+from turtle import pd
 from move import get_same_note_nodes
 import numpy as np
 import librosa
@@ -5,6 +6,7 @@ import librosa.display
 from matplotlib import lines as mlines, pyplot as plt
 from matplotlib.colors import LogNorm
 import matplotlib.patches as mpatches
+from predict import calculate_metrics, tab2pitch
 import seaborn as sns
 import librosa
 import yaml
@@ -18,33 +20,15 @@ import tqdm
 import networkx as nx
 
 
-def save_npz_notes(test_num, graph_tab_data):
-    # results/tabにあるデータを読み込んでそこに新しいデータを追加するようにしたい
+def save_npz_notes(npz_file_path, graph_tab_data):
+    # 既存のnpzファイルを読み込む
+    existing_data = np.load(npz_file_path)
 
-    test_data_path = os.path.join(
-        "data", "npz", f"original", "split", f"0{test_num}_*.npz"
-    )
-    test_data_list = np.array(glob.glob(test_data_path, recursive=True))
-    for npz_filename in tqdm.tqdm(test_data_list):
-        npz_save_dir = os.path.join(
-            "result",
-            "tab",
-            f"{trained_model}_epoch{use_model_epoch}",
-            "npz",
-            f"test_0{test_num}",
-        )
-        npz_save_filename = os.path.join(npz_save_dir, os.path.split(npz_filename)[1])
-        if not (os.path.exists(npz_save_dir)):
-            os.makedirs(npz_save_dir)
+    # 新しいデータを追加する
+    existing_data["note_tab_graph_pred"] = graph_tab_data
 
-        # 既存のnpzファイルを読み込む
-        existing_data = np.load(npz_save_filename)
-
-        # 新しいデータを追加する
-        existing_data["note_tab_graph_pred"] = graph_tab_data
-
-        # 追加したデータを含む新しいnpzファイルを保存する
-        np.savez_compressed(npz_save_filename, **existing_data)
+    # 追加したデータを含む新しいnpzファイルを保存する
+    np.savez_compressed(npz_file_path, **existing_data)
 
     return
 
@@ -165,8 +149,155 @@ def estimate_tab_from_pred(tab: np.ndarray):
     # ndarrayに変換
     npz_estimated_tab = np.array(estimated_tab)
 
-    save_npz_notes(npz_estimated_tab)
-    return 
+    return npz_estimated_tab
+
+
+def estimate_and_save_tab_in_npz(npz_filename_list, test_num):
+    npz_filename_list = npz_filename_list.split("\n")
+
+    (
+        frame_sum_F0_from_tab_precision,
+        frame_sum_F0_from_tab_recall,
+        frame_sum_F0_from_tab_f1,
+    ) = (0, 0, 0)
+
+    (
+        note_sum_F0_from_tab_graph_precision,
+        note_sum_F0_from_tab_graph_recall,
+        note_sum_F0_from_tab_graph_f1,
+    ) = (0, 0, 0)
+    frame_sum_tdr, note_sum_tdr = 0, 0
+
+    frame_sum_precision, frame_sum_recall, frame_sum_f1 = 0, 0, 0
+    note_sum_precision, note_sum_recall, note_sum_f1 = 0, 0, 0
+
+    frame_concat_pred = np.array([])
+    frame_concat_gt = np.array([])
+
+    for npz_file in npz_filename_list:
+        # ex) npz_file: result/tab/202304241804_epoch192/npz/test_02/02_Funk1-97-C_comp_01.npz
+        npz_data = np.load(npz_file)
+        note_pred = npz_data["note_tab_pred"]
+        estimated_tab = estimate_tab_from_pred(note_pred)
+        save_npz_notes(npz_file_path=npz_file, graph_tab_data=estimated_tab)
+
+        frame_pred = npz_data["frame_tab_pred"]
+        frame_gt = npz_data["frame_tab_gt"]
+
+        frame_pred = frame_pred[:, :, :-1].flatten()
+        frame_gt = frame_gt[:, :, :-1].flatten()
+
+        note_F0_gt = npz_data["note_F0_gt"]
+        note_gt = npz_data["note_tab_gt"]
+        note_F0_from_tab_graph_pred = tab2pitch(note_pred)
+        note_F0_from_tab_graph_pred = note_F0_from_tab_graph_pred.flatten()
+
+        note_F0_gt = note_F0_gt.flatten()
+        note_gt = note_gt[:, :, :-1].flatten()
+
+        frame_concat_pred = np.concatenate((frame_concat_pred, frame_pred), axis=None)
+        frame_concat_gt = np.concatenate((frame_concat_gt, frame_gt), axis=None)
+
+        frame_precision, frame_recall, frame_f1 = calculate_metrics(
+            frame_pred, frame_gt
+        )
+        note_precision, note_recall, note_f1 = calculate_metrics(note_pred, note_gt)
+
+        (
+            note_F0_from_tab_graph_precision,
+            note_F0_from_tab_graph_recall,
+            note_F0_from_tab_graph_f1,
+        ) = calculate_metrics(note_F0_from_tab_graph_pred, note_F0_gt)
+
+        frame_sum_precision += frame_precision
+        frame_sum_recall += frame_recall
+        frame_sum_f1 += frame_f1
+
+        note_sum_precision += note_precision
+        note_sum_recall += note_recall
+        note_sum_f1 += note_f1
+
+        note_sum_F0_from_tab_graph_precision += note_F0_from_tab_graph_precision
+        note_sum_F0_from_tab_graph_recall += note_F0_from_tab_graph_recall
+        note_sum_F0_from_tab_graph_f1 += note_F0_from_tab_graph_f1
+
+        print(f"finished {os.path.split(npz_file)[1][:-4]}")
+
+    frame_avg_precision = frame_sum_precision / len(npz_filename_list)
+    frame_avg_recall = frame_sum_recall / len(npz_filename_list)
+    frame_avg_f1 = frame_sum_f1 / len(npz_filename_list)
+
+    note_avg_precision = note_sum_precision / len(npz_filename_list)
+    note_avg_recall = note_sum_recall / len(npz_filename_list)
+    note_avg_f1 = note_sum_f1 / len(npz_filename_list)
+
+    frame_avg_F0_from_tab_precision = frame_sum_F0_from_tab_precision / len(
+        npz_filename_list
+    )
+    frame_avg_F0_from_tab_recall = frame_sum_F0_from_tab_recall / len(npz_filename_list)
+    frame_avg_F0_from_tab_f1 = frame_sum_F0_from_tab_f1 / len(npz_filename_list)
+
+    note_avg_F0_from_tab_graph_precision = note_sum_F0_from_tab_graph_precision / len(
+        npz_filename_list
+    )
+    note_avg_F0_from_tab_graph_recall = note_sum_F0_from_tab_graph_recall / len(
+        npz_filename_list
+    )
+    note_avg_F0_from_tab_graph_f1 = note_sum_F0_from_tab_graph_f1 / len(
+        npz_filename_list
+    )
+
+    frame_avg_tdr = frame_sum_tdr / len(npz_filename_list)
+    note_avg_tdr = note_sum_tdr / len(npz_filename_list)
+
+    frame_concat_precision, frame_concat_recall, frame_concat_f1 = calculate_metrics(
+        frame_concat_pred, frame_concat_gt
+    )
+
+    result = pd.DataFrame(
+        [
+            [
+                frame_avg_precision,
+                frame_avg_recall,
+                frame_avg_f1,
+                frame_concat_precision,
+                frame_concat_recall,
+                frame_concat_f1,
+                note_avg_precision,
+                note_avg_recall,
+                note_avg_f1,
+                frame_avg_F0_from_tab_precision,
+                frame_avg_F0_from_tab_recall,
+                frame_avg_F0_from_tab_f1,
+                note_avg_F0_from_tab_graph_precision,
+                note_avg_F0_from_tab_graph_recall,
+                note_avg_F0_from_tab_graph_f1,
+                frame_avg_tdr,
+                note_avg_tdr,
+            ]
+        ],
+        columns=[
+            "frame_segment_avg_tab_p",
+            "frame_segment_avg_tab_r",
+            "frame_segment_avg_tab_f",
+            "frame_frame_avg_tab_p",
+            "frame_frame_avg_tab_r",
+            "frame_frame_avg_tab_f",
+            "note_avg_tab_p",
+            "note_avg_tab_r",
+            "note_avg_tab_f",
+            "frame_avg_F0_from_tab_p",
+            "frame_avg_F0_from_tab_r",
+            "frame_avg_F0_from_tab_f",
+            "note_avg_F0_from_tab_graph_p",
+            "note_avg_F0_from_tab_graph_r",
+            "note_avg_F0_from_tab_graph_f",
+            "frame_avg_tdr",
+            "note_avg_tdr",
+        ],
+        index=[f"No0{test_num}"],
+    )
+    return result
 
 
 def main():
@@ -189,29 +320,8 @@ def main():
     use_model_epoch = args.epoch
     verbose = args.verbose
 
-    config_path = os.path.join("model", f"{trained_model}", "config.yaml")
-    with open(config_path) as f:
-        obj = yaml.safe_load(f)
-        note_resolution = obj["note_resolution"]
-        down_sampling_rate = obj["down_sampling_rate"]
-        bins_per_octave = obj["bins_per_octave"]
-        hop_length = obj["hop_length"]
-        encoder_layers = obj["encoder_layers"]
-        encoder_heads = obj["encoder_heads"]
-        n_cores = obj["n_cores"]
-        mode = obj["mode"]
-        input_feature_type = obj["input_feature_type"]
-
-    kwargs = {
-        "note_resolution": note_resolution,
-        "down_sampling_rate": down_sampling_rate,
-        "bins_per_octave": bins_per_octave,
-        "hop_length": hop_length,
-        "encoder_layers": encoder_layers,
-        "encoder_heads": encoder_heads,
-        "mode": mode,
-        "input_feature_type": input_feature_type,
-    }
+    mode = "tab"
+    n_cores = 12
 
     if mode == "F0":
         npz_dir = os.path.join(
@@ -241,7 +351,7 @@ def main():
             )
 
         npz_filename_list = glob.glob(os.path.join(npz_dir, f"test_0{test_num}", "*"))
-        kwargs["visualize_dir"] = visualize_dir
+        # kwargs["visualize_dir"] = visualize_dir
         if not (os.path.exists(visualize_dir)):
             os.makedirs(visualize_dir)
 
@@ -250,7 +360,9 @@ def main():
 
         # npz_filename_list：result/tab/npzのとこにあるnpzのファイル
         # npz_filename_listの全てのファイルに対してvisualizeを実行している
-        p.starmap(estimate_tab_from_pred, zip(npz_filename_list, repeat(kwargs)))
+        p.starmap(
+            estimate_and_save_tab_in_npz, zip(npz_filename_list, repeat(test_num))
+        )
         p.close()  # or p.terminate()
         p.join()
 

@@ -248,7 +248,7 @@ def visualize(npz_filename_list, kwargs):
             note_graph_pred = npz_file["note_tab_graph_pred"]
             frame_F0_from_tab_pred = npz_file["frame_F0_from_tab_pred"]
             # グラフからのframe-levelでのF0の出力
-            frame_F0_from_tab_graph_pred = npz_file["frame_F0_from_tab_graph_pred"]
+            # frame_F0_from_tab_graph_pred = npz_file["frame_F0_from_tab_graph_pred"]
             frame_F0_gt = npz_file["frame_F0_gt"]
             note_F0_from_tab_pred = npz_file["note_F0_from_tab_pred"]
             # グラフからのnote-levelでのF0の出力
@@ -403,24 +403,24 @@ def visualize(npz_filename_list, kwargs):
 
             # ここから下はグラフF0の出力
             # frame level F0 converted from tab_graph prediction
-            plt.subplot(n_subplots, 1, subplot_counter)
-            plt.title("Frame-level F0 converted from Tab graph estimation")
-            librosa.display.specshow(
-                (frame_F0_gt * 0.4 + frame_F0_from_tab_graph_pred).T,
-                x_axis="time",
-                y_axis=None,
-                sr=down_sampling_rate,
-                hop_length=hop_length,
-                cmap="hot",
-            )
-            plt.yticks([8, 20, 32], ["C3", "C4", "C5"])
-            plt.ylabel("pitch")
-            TP_patch = mpatches.Patch(color="white", label="TP")
-            FP_patch = mpatches.Patch(color="yellow", label="FP")
-            FN_patch = mpatches.Patch(color="red", label="FN")
-            plt.legend(handles=[TP_patch, FP_patch, FN_patch])
-            plt.xlabel("Tims [s]")
-            subplot_counter = subplot_counter + 1
+            # plt.subplot(n_subplots, 1, subplot_counter)
+            # plt.title("Frame-level F0 converted from Tab graph estimation")
+            # librosa.display.specshow(
+            #     (frame_F0_gt * 0.4 + frame_F0_from_tab_graph_pred).T,
+            #     x_axis="time",
+            #     y_axis=None,
+            #     sr=down_sampling_rate,
+            #     hop_length=hop_length,
+            #     cmap="hot",
+            # )
+            # plt.yticks([8, 20, 32], ["C3", "C4", "C5"])
+            # plt.ylabel("pitch")
+            # TP_patch = mpatches.Patch(color="white", label="TP")
+            # FP_patch = mpatches.Patch(color="yellow", label="FP")
+            # FN_patch = mpatches.Patch(color="red", label="FN")
+            # plt.legend(handles=[TP_patch, FP_patch, FN_patch])
+            # plt.xlabel("Tims [s]")
+            # subplot_counter = subplot_counter + 1
 
             # note level F0 converted from tab_graph prediction
             plt.subplot(n_subplots, 1, subplot_counter)
