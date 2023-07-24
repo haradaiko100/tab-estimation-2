@@ -244,10 +244,15 @@ def visualize(npz_filename_list, kwargs):
             frame_gt = npz_file["frame_tab_gt"]
             note_pred = npz_file["note_tab_pred"]
             note_gt = npz_file["note_tab_gt"]
+            # グラフからのタブ譜の出力
             note_graph_pred = npz_file["note_tab_graph_pred"]
             frame_F0_from_tab_pred = npz_file["frame_F0_from_tab_pred"]
+            # グラフからのframe-levelでのF0の出力
+            frame_F0_from_tab_graph_pred = npz_file["frame_F0_from_tab_graph_pred"]
             frame_F0_gt = npz_file["frame_F0_gt"]
             note_F0_from_tab_pred = npz_file["note_F0_from_tab_pred"]
+            # グラフからのnote-levelでのF0の出力
+            note_F0_from_tab_graph_pred = npz_file["note_F0_from_tab_graph_pred"]
             note_F0_gt = npz_file["note_F0_gt"]
             attn_map = npz_file["attn_map"]
 
@@ -377,6 +382,51 @@ def visualize(npz_filename_list, kwargs):
             plt.title("Note-level F0 converted fron Tab estimation")
             sns.heatmap(
                 (note_F0_gt * 0.4 + note_F0_from_tab_pred).T,
+                cmap="hot",
+                cbar=False,
+                rasterized=False,
+            ).invert_yaxis()
+            plt.legend(handles=[TP_patch, FP_patch, FN_patch])
+            for n_note in range(len(note_F0_gt) + 1):
+                if n_note % 16 == 0:
+                    plt.axvline(n_note, color="white", lw=1)
+                else:
+                    plt.axvline(n_note, color="white", lw=0.2)
+            plt.xticks(
+                [i for i in range(0, n_note) if i % note_resolution == 0],
+                labels=[i for i in range(0, n_note // note_resolution + 1)],
+            )
+            plt.yticks([8, 20, 32], ["C3", "C4", "C5"])
+            plt.xlabel("Bar number")
+            plt.ylabel("pitch")
+            subplot_counter = subplot_counter + 1
+
+            # ここから下はグラフF0の出力
+            # frame level F0 converted from tab_graph prediction
+            plt.subplot(n_subplots, 1, subplot_counter)
+            plt.title("Frame-level F0 converted from Tab graph estimation")
+            librosa.display.specshow(
+                (frame_F0_gt * 0.4 + frame_F0_from_tab_graph_pred).T,
+                x_axis="time",
+                y_axis=None,
+                sr=down_sampling_rate,
+                hop_length=hop_length,
+                cmap="hot",
+            )
+            plt.yticks([8, 20, 32], ["C3", "C4", "C5"])
+            plt.ylabel("pitch")
+            TP_patch = mpatches.Patch(color="white", label="TP")
+            FP_patch = mpatches.Patch(color="yellow", label="FP")
+            FN_patch = mpatches.Patch(color="red", label="FN")
+            plt.legend(handles=[TP_patch, FP_patch, FN_patch])
+            plt.xlabel("Tims [s]")
+            subplot_counter = subplot_counter + 1
+
+            # note level F0 converted from tab_graph prediction
+            plt.subplot(n_subplots, 1, subplot_counter)
+            plt.title("Note-level F0 converted fron Tab graph estimation")
+            sns.heatmap(
+                (note_F0_gt * 0.4 + note_F0_from_tab_graph_pred).T,
                 cmap="hot",
                 cbar=False,
                 rasterized=False,
