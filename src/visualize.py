@@ -486,7 +486,7 @@ def main():
         if mode == "tab":
             visualize_dir = os.path.join(
                 "result",
-                "tab",
+                "tab_graph",
                 f"{trained_model}_epoch{use_model_epoch}",
                 "visualize",
                 f"test_0{test_num}",
