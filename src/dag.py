@@ -87,6 +87,8 @@ def calc_weight_between_notes(prev_note: np.ndarray, current_note: np.ndarray):
 
     current_fingers_distance = current_fingers_dict["max"] - current_fingers_dict["min"]
 
+    current_mid_fret = sum(current_fingers_dict.values()) / len(current_fingers_dict)
+
     prev_fret = sum(prev_fingers_dict.values()) / len(prev_fingers_dict)
 
     # 開放弦のみ or 弦引いてないときは重みを0にする
@@ -94,11 +96,9 @@ def calc_weight_between_notes(prev_note: np.ndarray, current_note: np.ndarray):
         weight = 0
 
     else:
-        weight = abs(prev_fret - (current_fingers_distance / 2)) + (
-            current_fingers_distance
-        )
-        if current_fingers_dict["max"] > 7:
-            weight += 1
+        weight = abs(prev_fret - current_mid_fret) + (current_fingers_distance)
+        # if current_fingers_dict["max"] > 7:
+        #     weight += 1
 
     return weight
 
@@ -342,6 +342,18 @@ def main():
             "result", "tab", f"{trained_model}_epoch{use_model_epoch}", "npz"
         )
 
+    metrics_data = pd.DataFrame()
+    result_path = os.path.join("result")
+    if not os.path.exists(result_path):
+        os.makedirs(result_path)
+
+    csv_path = os.path.join(
+        result_path,
+        f"{mode}_graph",
+        trained_model + f"_epoch{use_model_epoch}",
+        "metrics.csv",
+    )
+
     for test_num in range(6):
         if mode == "F0":
             visualize_dir = os.path.join(
@@ -361,68 +373,21 @@ def main():
             )
 
         npz_filename_list = glob.glob(os.path.join(npz_dir, f"test_0{test_num}", "*"))
+        if isinstance(npz_filename_list, list):
+            npz_filename_list = "\n".join(npz_filename_list)
         # kwargs["visualize_dir"] = visualize_dir
         if not (os.path.exists(visualize_dir)):
             os.makedirs(visualize_dir)
 
-        # paralell process
-        p = Pool(n_cores)
-
-        # npz_filename_list：result/tab/npzのとこにあるnpzのファイル
-        # npz_filename_listの全てのファイルに対してvisualizeを実行している
-        metrics_results = p.starmap(
-            estimate_and_save_tab_in_npz, zip(npz_filename_list, repeat(test_num))
+        metrics_result = estimate_and_save_tab_in_npz(
+            npz_filename_list=npz_filename_list, test_num=test_num
         )
-        p.close()  # or p.terminate()
-        p.join()
 
-        metrics_data = pd.DataFrame()
-        result_path = os.path.join("result")
-        if not os.path.exists(result_path):
-            os.makedirs(result_path)
+        metrics_data = pd.concat([metrics_data, metrics_result], axis=0)
 
-        csv_path = os.path.join(
-            result_path,
-            f"{mode}",
-            trained_model + f"_epoch{use_model_epoch}",
-            "metrics.csv",
-        )
-        for i in range(len(metrics_results)):
-            metrics_data.append(metrics_results[i])
-
-        metrics_data = metrics_data.append(metrics_data.describe()[1:3])
-        metrics_data.to_csv(csv_path, float_format="%.3f")
+    metrics_data = metrics_data.append(metrics_data.describe()[1:3])
+    metrics_data.to_csv(csv_path, float_format="%.3f")
 
 
 if __name__ == "__main__":
     main()
-    # parser = argparse.ArgumentParser(description="code for plotting results")
-    # parser.add_argument(
-    #     "model", type=str, help="name of trained model: ex) 202201010000"
-    # )
-    # parser.add_argument("epoch", type=int, help="number of model epoch to use: ex) 64")
-    # parser.add_argument(
-    #     "-v",
-    #     "--verbose",
-    #     help="option for verbosity: -v to turn on verbosity",
-    #     action="store_true",
-    #     required=False,
-    #     default=False,
-    # )
-    # args = parser.parse_args()
-
-    # trained_model = args.model
-    # use_model_epoch = args.epoch
-    # npz_dir = os.path.join(
-    #     "result", "tab", f"{trained_model}_epoch{use_model_epoch}", "npz"
-    # )
-    # # npz_filename_list = glob.glob(
-    # #         os.path.join(npz_dir, f"test_0{test_num}", "*"))
-    # npz_filename_list = glob.glob(os.path.join(npz_dir, "test_00", "*"))
-
-    # npz_data = np.load(npz_filename_list[3])
-    # # print(npz_filename_list[3])
-    # note_pred = npz_data["note_tab_pred"]
-
-    # estimated_tab = estimate_tab_from_pred(note_pred)
-    # print(estimated_tab)

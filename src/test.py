@@ -10,6 +10,8 @@ def get_fingers_distance_dict(note: np.ndarray):
         elem for elem in finger_positions if elem != 0 and elem != 20
     ]
 
+    # print(new_finger_positions)
+
     # 要素ない場合は0を返す
     if len(new_finger_positions) == 0:
         return {
