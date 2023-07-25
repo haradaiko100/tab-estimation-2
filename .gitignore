@@ -6,6 +6,8 @@
 
 .vscode/
 /data
+guitar-env/
+tensorboard/
 
 src/__pycache__/
 
