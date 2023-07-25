@@ -41,9 +41,9 @@ def get_fingers_distance_dict(note: np.ndarray):
     # 各弦の押している位置を取得
     finger_positions = np.argmax(note, axis=1)
 
-    # finger_positionsから開放弦(0)と鳴らしてない弦(21)の情報を削除
+    # finger_positionsから開放弦(インデックス：0)と鳴らしてない弦(インデックス：20)の情報を削除
     new_finger_positions = [
-        elem for elem in finger_positions if elem != 0 and elem != 21
+        elem for elem in finger_positions if elem != 0 and elem != 20
     ]
 
     # 要素ない場合は0を返す
@@ -370,11 +370,28 @@ def main():
 
         # npz_filename_list：result/tab/npzのとこにあるnpzのファイル
         # npz_filename_listの全てのファイルに対してvisualizeを実行している
-        p.starmap(
+        metrics_results = p.starmap(
             estimate_and_save_tab_in_npz, zip(npz_filename_list, repeat(test_num))
         )
         p.close()  # or p.terminate()
         p.join()
+
+        metrics_data = pd.DataFrame()
+        result_path = os.path.join("result")
+        if not os.path.exists(result_path):
+            os.makedirs(result_path)
+
+        csv_path = os.path.join(
+            result_path,
+            f"{mode}",
+            trained_model + f"_epoch{use_model_epoch}",
+            "metrics.csv",
+        )
+        for i in range(len(metrics_results)):
+            metrics_data.append(metrics_results[i])
+
+        metrics_data = metrics_data.append(metrics_data.describe()[1:3])
+        metrics_data.to_csv(csv_path, float_format="%.3f")
 
 
 if __name__ == "__main__":
