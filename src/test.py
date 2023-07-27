@@ -53,16 +53,21 @@ def calc_weight_between_notes(prev_note: np.ndarray, current_note: np.ndarray):
 
     current_fingers_distance = current_fingers_dict["max"] - current_fingers_dict["min"]
 
+    current_mid_fret = sum(current_fingers_dict.values()) / len(current_fingers_dict)
+
     prev_fret = sum(prev_fingers_dict.values()) / len(prev_fingers_dict)
 
     # 開放弦のみ or 弦引いてないときは重みを0にする
     if current_fingers_dict["max"] == 0 and current_fingers_dict["min"] == 0:
-        weight = 0
+        return weight
 
     else:
-        weight = abs(prev_fret - (current_fingers_distance / 2)) + (
-            current_fingers_distance
-        )
+        # 前の音が開放弦 or ミュートの時
+        if prev_fret == 0:
+            weight = current_fingers_distance
+
+        else:
+            weight = abs(prev_fret - current_mid_fret) + (current_fingers_distance)
         # if current_fingers_dict["max"] > 7:
         #     weight += 1
 
@@ -81,11 +86,22 @@ if __name__ == "__main__":
         ]
     )
 
-    muted_array = np.array(
+    new_array = np.array(
         [
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        ]
+    )
+
+    new_array2 = np.array(
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -94,5 +110,8 @@ if __name__ == "__main__":
 
     result = get_fingers_distance_dict(input_array)
     print(result)
-    muted = get_fingers_distance_dict(muted_array)
-    print(muted)
+    # muted = get_fingers_distance_dict(muted_array)
+    # print(muted)
+
+    weight = calc_weight_between_notes(prev_note=new_array, current_note=new_array2)
+    print(weight)

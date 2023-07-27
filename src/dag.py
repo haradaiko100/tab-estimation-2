@@ -6,9 +6,10 @@ import librosa.display
 from matplotlib import lines as mlines, pyplot as plt
 from matplotlib.colors import LogNorm
 import matplotlib.patches as mpatches
-from predict import calculate_metrics, tab2pitch
+from predict import TDR, calculate_metrics, tab2pitch
 import seaborn as sns
 import librosa
+import torch
 import yaml
 import os
 import argparse
@@ -93,12 +94,17 @@ def calc_weight_between_notes(prev_note: np.ndarray, current_note: np.ndarray):
 
     # 開放弦のみ or 弦引いてないときは重みを0にする
     if current_fingers_dict["max"] == 0 and current_fingers_dict["min"] == 0:
-        weight = 0
+        return weight
 
     else:
-        weight = abs(prev_fret - current_mid_fret) + (current_fingers_distance)
-        # if current_fingers_dict["max"] > 7:
-        #     weight += 1
+        # 前の音が開放弦 or ミュートの時
+        if prev_fret == 0:
+            weight = current_fingers_distance
+
+        else:
+            weight = abs(prev_fret - current_mid_fret) + (current_fingers_distance)
+        if current_fingers_dict["max"] > 10:
+            weight += 1
 
     return weight
 
@@ -166,11 +172,18 @@ def estimate_and_save_tab_in_npz(npz_filename_list, test_num):
     ) = (0, 0, 0)
 
     (
+        note_sum_F0_from_tab_precision,
+        note_sum_F0_from_tab_recall,
+        note_sum_F0_from_tab_f1,
+    ) = (0, 0, 0)
+
+    (
         note_sum_F0_from_tab_graph_precision,
         note_sum_F0_from_tab_graph_recall,
         note_sum_F0_from_tab_graph_f1,
     ) = (0, 0, 0)
     frame_sum_tdr, note_sum_tdr = 0, 0
+    frame_graph_sum_tdr, note_graph_sum_tdr = 0, 0
 
     frame_sum_precision, frame_sum_recall, frame_sum_f1 = 0, 0, 0
     note_sum_precision, note_sum_recall, note_sum_f1 = 0, 0, 0
@@ -183,18 +196,33 @@ def estimate_and_save_tab_in_npz(npz_filename_list, test_num):
         npz_data = np.load(npz_file)
         note_pred = npz_data["note_tab_pred"]
         note_gt = npz_data["note_tab_gt"]
+
+        frame_gt = npz_data["frame_tab_gt"]
+        frame_pred = npz_data["frame_tab_pred"]
+
+        note_F0_gt = npz_data["note_F0_gt"]
+        frame_F0_gt = npz_data["frame_F0_gt"]
+
         estimated_tab = estimate_tab_from_pred(note_pred)
-        note_F0_from_tab_graph_pred = tab2pitch(note_pred)
+        note_F0_from_tab_graph_pred = tab2pitch(estimated_tab)
+
+        frame_tdr = TDR(frame_pred, frame_gt, frame_F0_gt)
+        note_tdr = TDR(note_pred, note_gt, note_F0_gt)
+
+        frame_note_tdr = TDR(frame_pred, frame_gt, frame_F0_gt)
+        note_graph_tdr = TDR(estimated_tab, note_gt, note_F0_gt)
+
+        frame_sum_tdr += frame_tdr
+        note_sum_tdr += note_tdr
+
+        frame_graph_sum_tdr += frame_note_tdr
+        note_graph_sum_tdr += note_graph_tdr
+
         save_npz_notes(
             npz_file_path=npz_file,
             graph_tab_data=estimated_tab,
             note_F0_from_tab_graph_pred=note_F0_from_tab_graph_pred,
         )
-
-        frame_pred = npz_data["frame_tab_pred"]
-        frame_gt = npz_data["frame_tab_gt"]
-
-        note_F0_gt = npz_data["note_F0_gt"]
 
         frame_pred = frame_pred[:, :, :-1].flatten()
         frame_gt = frame_gt[:, :, :-1].flatten()
@@ -260,6 +288,9 @@ def estimate_and_save_tab_in_npz(npz_filename_list, test_num):
     frame_avg_tdr = frame_sum_tdr / len(npz_filename_list)
     note_avg_tdr = note_sum_tdr / len(npz_filename_list)
 
+    frame_graph_avg_tdr = frame_graph_sum_tdr / len(npz_filename_list)
+    note_graph_avg_tdr = note_graph_sum_tdr / len(npz_filename_list)
+
     frame_concat_precision, frame_concat_recall, frame_concat_f1 = calculate_metrics(
         frame_concat_pred, frame_concat_gt
     )
@@ -284,6 +315,8 @@ def estimate_and_save_tab_in_npz(npz_filename_list, test_num):
                 note_avg_F0_from_tab_graph_f1,
                 frame_avg_tdr,
                 note_avg_tdr,
+                frame_graph_avg_tdr,
+                note_graph_avg_tdr,
             ]
         ],
         columns=[
@@ -304,6 +337,8 @@ def estimate_and_save_tab_in_npz(npz_filename_list, test_num):
             "note_avg_F0_from_tab_graph_f",
             "frame_avg_tdr",
             "note_avg_tdr",
+            "frame_graph_avg_tdr",
+            "note_graph_avg_tdr",
         ],
         index=[f"No0{test_num}"],
     )
