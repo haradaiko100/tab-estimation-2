@@ -4,6 +4,8 @@
 
 /model
 
+/requirements.txt
+
 .vscode/
 /data
 guitar-env/
