@@ -114,8 +114,9 @@ def estimate_tab_from_pred(tab: np.ndarray):
     current_time = 0
     prev_time = 0
     node_count = 1
+    dest_node_count = 1
 
-    for note in tab:
+    for note_index, note in enumerate(tab):
         if current_time == 0:
             DG.add_node(node_count, data=note, time=current_time, count=node_count)
             node_count += 1
@@ -124,6 +125,10 @@ def estimate_tab_from_pred(tab: np.ndarray):
             # get_same_note_nodes内でありえないノードは含まれないようにしたい
             same_note_nodes = get_same_note_nodes(note)  # numpyの配列
             prev_time_nodes = get_same_time_nodes_from_graph(DG, prev_time)
+
+            # 最短経路の目的地のノードを設定する
+            if note_index == len(tab) - 1:
+                dest_node_count = node_count
 
             # グラフにノード追加
             for i in range(len(same_note_nodes)):
@@ -149,8 +154,11 @@ def estimate_tab_from_pred(tab: np.ndarray):
         prev_time = current_time
         current_time += 1
 
+    # shortest_path = nx.dijkstra_path(
+    #     G=DG, source=1, target=node_count - 1, weight="weight"
+    # )
     shortest_path = nx.dijkstra_path(
-        G=DG, source=1, target=node_count - 1, weight="weight"
+        G=DG, source=1, target=dest_node_count, weight="weight"
     )
 
     # shortest_pathの実際のデータを取得する
