@@ -487,7 +487,7 @@ def main():
 
     csv_path = os.path.join(
         result_path,
-        "tab_graph",
+        f"{mode}",
         trained_model + f"_epoch{use_model_epoch}",
         "metrics.csv",
     )
