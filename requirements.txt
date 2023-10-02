@@ -53,7 +53,7 @@ mir-eval==0.7
 multidict==6.0.4
 nltk==3.8.1
 numba==0.48.0
-numpy==1.18.0
+numpy==1.22.0
 oauthlib==3.2.2
 packaging==23.1
 pandas==0.25.3
