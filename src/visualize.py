@@ -459,18 +459,13 @@ def main():
     )
     parser.add_argument("epoch", type=int, help="number of model epoch to use: ex) 64")
     parser.add_argument(
-        "-v",
-        "--verbose",
-        help="option for verbosity: -v to turn on verbosity",
-        action="store_true",
-        required=False,
-        default=False,
+        "directory_date", type=str, help="date of dag.py was carried out"
     )
     args = parser.parse_args()
 
     trained_model = args.model
     use_model_epoch = args.epoch
-    verbose = args.verbose
+    date = args.directory_date
 
     config_path = os.path.join("model", f"{trained_model}", "config.yaml")
     with open(config_path) as f:
@@ -519,6 +514,7 @@ def main():
                 "result",
                 "tab_graph",
                 f"{trained_model}_epoch{use_model_epoch}",
+                date,
                 "visualize",
                 f"test_0{test_num}",
             )

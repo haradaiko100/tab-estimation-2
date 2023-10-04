@@ -1,3 +1,4 @@
+from datetime import datetime
 import pandas as pd
 from move import get_same_note_nodes
 import numpy as np
@@ -99,7 +100,10 @@ def calc_weight_between_notes(prev_note: np.ndarray, current_note: np.ndarray):
     else:
         # 前の音が開放弦 or ミュートの時
         if prev_fret == 0:
-            weight = current_fingers_distance
+
+            # ここのweightが一つの弦だけを押してるときに、
+            # current_fingers_distanceだけだと遠い弦と近い弦の差が出なくなっちゃう
+            weight = current_fingers_distance + current_fingers_dict["max"]
 
         else:
             weight = abs(prev_fret - current_mid_fret) + (current_fingers_distance)
@@ -385,6 +389,10 @@ def main():
             "result", "tab", f"{trained_model}_epoch{use_model_epoch}", "npz"
         )
 
+    now = datetime.now()
+    now_formated = now.strftime("%Y%m%d_%H%M%S")  # "%d/%m/%Y %H:%M:%S"
+    # print("Today's date: ", today_formated)        
+
     metrics_data = pd.DataFrame()
     result_path = os.path.join("result")
     if not os.path.exists(result_path):
@@ -394,6 +402,7 @@ def main():
         result_path,
         f"{mode}_graph",
         trained_model + f"_epoch{use_model_epoch}",
+        now_formated,
         "metrics.csv",
     )
 
@@ -411,6 +420,7 @@ def main():
                 "result",
                 "tab_graph",
                 f"{trained_model}_epoch{use_model_epoch}",
+                now_formated,
                 "visualize",
                 f"test_0{test_num}",
             )
