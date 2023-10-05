@@ -104,7 +104,18 @@ The first argument is `date_and_time`, and the second argument is `epochs`.
 ex) `python3 src/predict.py 202201012359 192`
 This will load the trained model, predict, calculate metrics, and save the results to `result/F0` or `result/tab`.
 
+
+### Generate tablature data with graph
+Run [src/dag.py](https://github.com/KimSehun725/Tab-estimator/blob/master/src/dag.py) with arguments for designating the model. 
+The first argument is `date_and_time`, and the second argument is `epochs`.   
+ex) `python3 src/dag.py 202201012359 192`
+This will load the trained model, predict, calculate metrics, and save the results to `result/tab_graph/[date]`.
+
+
 ### Visualize the predictions
 Run [src/visualize.py](https://github.com/KimSehun725/Tab-estimator/blob/master/src/visualize.py) with arguments for designating the model.
-ex) `python3 src/visualize.py 202201012359 192`
+The first argument is `date_and_time`, and the second argument is `epochs`, the third argument is `date_when_predict.py_executed`
+ex) `python3 src/visualize.py 202201012359 192 20231004_124744`
 This will visualize the results and save these to `result/*/visualize/`.
+
+
