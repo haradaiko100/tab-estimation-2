@@ -100,7 +100,6 @@ def calc_weight_between_notes(prev_note: np.ndarray, current_note: np.ndarray):
     else:
         # 前の音が開放弦 or ミュートの時
         if prev_fret == 0:
-
             # ここのweightが一つの弦だけを押してるときに、
             # current_fingers_distanceだけだと遠い弦と近い弦の差が出なくなっちゃう
             weight = current_fingers_distance + current_fingers_dict["max"]
@@ -120,6 +119,12 @@ def estimate_tab_from_pred(tab: np.ndarray):
     node_count = 1
     dest_node_count = 1
 
+    current_stopping_point_index = 1
+    next_stopping_point_index = 1
+
+    stopping_point_index_list = []
+    shortest_path_list = []
+
     for note_index, note in enumerate(tab):
         if current_time == 0:
             DG.add_node(node_count, data=note, time=current_time, count=node_count)
@@ -129,6 +134,10 @@ def estimate_tab_from_pred(tab: np.ndarray):
             # get_same_note_nodes内でありえないノードは含まれないようにしたい
             same_note_nodes = get_same_note_nodes(note)  # numpyの配列
             prev_time_nodes = get_same_time_nodes_from_graph(DG, prev_time)
+
+            # 小節の区切りに当たるCNNからのノードを記録
+            if (note_index + 1) % 16 == 0:
+                stopping_point_index_list.append(node_count)
 
             # 最短経路の目的地のノードを設定する
             if note_index == len(tab) - 1:
@@ -158,15 +167,25 @@ def estimate_tab_from_pred(tab: np.ndarray):
         prev_time = current_time
         current_time += 1
 
+    # 小節ごとに最短経路を求める
+    for i in range(len(stopping_point_index_list)):
+        each_shortest_path = nx.dijkstra_path(
+            G=DG,
+            source=current_stopping_point_index,
+            target=stopping_point_index_list[i],
+            weight="weight",
+        )
+        # shortest_path_list.append(each_shortest_path)
+        shortest_path_list += each_shortest_path
+
+        current_stopping_point_index = stopping_point_index_list[i] + 1
+
     # shortest_path = nx.dijkstra_path(
-    #     G=DG, source=1, target=node_count - 1, weight="weight"
+    #     G=DG, source=1, target=dest_node_count, weight="weight"
     # )
-    shortest_path = nx.dijkstra_path(
-        G=DG, source=1, target=dest_node_count, weight="weight"
-    )
 
     # shortest_pathの実際のデータを取得する
-    estimated_tab = [DG.nodes[node]["data"] for node in shortest_path]
+    estimated_tab = [DG.nodes[node]["data"] for node in shortest_path_list]
 
     # ndarrayに変換
     npz_estimated_tab = np.array(estimated_tab)
@@ -391,7 +410,7 @@ def main():
 
     now = datetime.now()
     now_formated = now.strftime("%Y%m%d_%H%M%S")  # "%d/%m/%Y %H:%M:%S"
-    # print("Today's date: ", today_formated)        
+    # print("Today's date: ", today_formated)
 
     metrics_data = pd.DataFrame()
     result_path = os.path.join("result")
