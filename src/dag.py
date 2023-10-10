@@ -122,7 +122,7 @@ def estimate_tab_from_pred(tab: np.ndarray):
     current_stopping_point_index = 1
     next_stopping_point_index = 1
 
-    stopping_point_index_list = []
+    stopping_point_node_list = []
     shortest_path_list = []
 
     for note_index, note in enumerate(tab):
@@ -137,7 +137,7 @@ def estimate_tab_from_pred(tab: np.ndarray):
 
             # 小節の区切りに当たるCNNからのノードを記録
             if (note_index + 1) % 16 == 0:
-                stopping_point_index_list.append(node_count)
+                stopping_point_node_list.append(node_count)
 
             # 最短経路の目的地のノードを設定する
             if note_index == len(tab) - 1:
@@ -168,17 +168,20 @@ def estimate_tab_from_pred(tab: np.ndarray):
         current_time += 1
 
     # 小節ごとに最短経路を求める
-    for i in range(len(stopping_point_index_list)):
+    for i in range(len(stopping_point_node_list)):
         each_shortest_path = nx.dijkstra_path(
             G=DG,
             source=current_stopping_point_index,
-            target=stopping_point_index_list[i],
+            target=stopping_point_node_list[i],
             weight="weight",
         )
         # shortest_path_list.append(each_shortest_path)
         shortest_path_list += each_shortest_path
 
-        current_stopping_point_index = stopping_point_index_list[i] + 1
+        current_stopping_point_index = stopping_point_node_list[i] + 1
+
+    # 重複あったら削除する
+    shortest_path_list = list(set(shortest_path_list))
 
     # shortest_path = nx.dijkstra_path(
     #     G=DG, source=1, target=dest_node_count, weight="weight"
