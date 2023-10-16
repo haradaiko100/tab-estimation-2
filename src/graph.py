@@ -146,6 +146,7 @@ if __name__ == "__main__":
     # frame_pred = npz_data["frame_tab_pred"]
     # print(frame_pred.shape)
     print(note_pred.shape)
+
     # print(note_pred[20])
     # note_f0 = npz_data["note_F0_from_tab_pred"] # 2次元配列 64×44形式 44はギターで出せる音の高さの数
     # print(note_f0[5])
