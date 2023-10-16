@@ -178,7 +178,7 @@ def estimate_tab_from_pred(tab: np.ndarray):
         # shortest_path_list.append(each_shortest_path)
         shortest_path_list += each_shortest_path
 
-        current_stopping_point_index = stopping_point_node_list[i] + 1
+        current_stopping_point_index = stopping_point_node_list[i]
 
     # 重複あったら削除する
     shortest_path_list = list(set(shortest_path_list))
