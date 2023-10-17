@@ -6,7 +6,7 @@ def get_same_note_with_one_move(note):
     num_strings = 6
     same_note_list = []
 
-    # downwards_shift
+    # downwards_shift(6弦→1弦の方向にシフト)
     for start_string in range(1, num_strings):
         copied_array = np.copy(note)
         sounding_position = np.where(copied_array[start_string] == 1)[0]
@@ -42,7 +42,7 @@ def get_same_note_with_one_move(note):
         if len(moved_string_position) == 1:
             same_note_list.append(copied_array)
 
-    # upwards_shift
+    # upwards_shift(1弦→6弦の方向にシフト)
     for start_string in range(1, num_strings):
         reversed_copied_array = np.copy(note)[::-1]
         sounding_position = np.where(reversed_copied_array[start_string] == 1)[0]
@@ -88,98 +88,86 @@ def get_same_note_with_one_move(note):
 
 
 # 複数の弦を移動させる必要がある場合
-def get_same_note_positions(note):
+def get_same_note_with_multiple_moves(note):
     num_strings = 6
     same_note_list = []
 
-    # downwards_shift
-    if note[num_strings - 1][-1] == 1:
+    # downwards_shift(6弦→1弦の方向にシフト)
+    # 複数の弦をシフトさせる場合、downwardsだと1弦がミュートされてないといけない
+    if note[0][-1] == 1:
         copied_array = np.copy(note)
-        can_sound_correctly = True
-        for string in range(num_strings - 1):
+        # can_sound_correctly = True
+        for string in range(1,num_strings):
             sounding_position = np.where(copied_array[string] == 1)[0]
-            # print(sounding_position)
+
             # 弦がミュートしている場合はスキップ
             if len(sounding_position) == 1 and copied_array[string][-1] == 1:
                 continue
 
             # 元々の弦がミュートしている場合はスキップ(2回以上同じ音に対して移動させないため)
-            if note[string][-1] == 1:
-                continue
+            # if note[string][-1] == 1:
+            #     continue
 
             # 3→2弦の移動は-4、それ以外は-5
-            parallel_move_dist = 4 if string == 3 else 5
+            parallel_move_dist = 4 if string == 2 else 5
 
-            prev_sounding_fret = max(sounding_position)
+            current_sounding_fret = max(sounding_position)
 
             # フレットがマイナスだったらそのパターンは無し
-            next_string_fret = prev_sounding_fret - parallel_move_dist
+            next_string_fret = current_sounding_fret - parallel_move_dist
             if next_string_fret < 0:
-                can_sound_correctly = False
                 break
 
             # 一つ下の弦に音を移動させる
-            copied_value = np.copy(copied_array[string, prev_sounding_fret])
-            copied_array[string + 1][next_string_fret] = copied_value
+            copied_value = np.copy(copied_array[string, current_sounding_fret])
+            copied_array[string - 1][next_string_fret] = copied_value
 
             # 移動先の弦が元々ミュートしていた場合、そのフレット情報を更新する
-            if copied_array[string + 1][-1] == 1:
-                copied_array[string + 1][-1] = 0
+            if copied_array[string - 1][-1] == 1:
+                copied_array[string - 1][-1] = 0
 
             # 移動元の弦の状態を更新する
-            copied_array[string][prev_sounding_fret] = 0
+            copied_array[string][current_sounding_fret] = 0
+            copied_array[string][-1] = 1
 
-            # 移動元の弦の状態を更新後、何も音の情報がない場合(移動先の弦が元々ミュートしていた場合)
-            if not np.any(copied_array[string] == 1):
-                copied_array[string][-1] = 1
+        same_note_list.append(copied_array)
 
-        if can_sound_correctly:
-            same_note_list.append(copied_array)
-
-    # upwards_shift
-    if note[0][-1] == 1:
+    # upwards_shift(1弦→6弦の方向にシフト)
+    # 複数の弦をシフトさせる場合、upwardsだと6弦がミュートされてないといけない
+    if note[num_strings - 1][-1] == 1:
         reversed_copied_array = np.copy(note)[::-1]
-        can_sound_correctly = True
-        for string in range(num_strings - 1):
+        for string in range(1,num_strings):
             sounding_position = np.where(reversed_copied_array[string] == 1)[0]
 
             # 弦がミュートしている場合はスキップ
             if len(sounding_position) == 1 and reversed_copied_array[string][-1] == 1:
                 continue
 
-            # 元々の弦がミュートしている場合はスキップ(2回以上同じ音に対して移動させないため)
-            if note[num_strings - 1 - string][-1] == 1:
-                continue
 
             # 2→3弦の移動は+4、それ以外は+5
-            parallel_move_dist = 4 if string == 1 else 5
+            parallel_move_dist = 4 if string == 4 else 5
 
-            prev_sounding_fret = min(sounding_position)
+            current_sounding_fret = min(sounding_position)
 
             # フレットがギターの幅超えてたらそのパターンは無し
-            next_string_fret = prev_sounding_fret + parallel_move_dist
+            next_string_fret = current_sounding_fret + parallel_move_dist
             if next_string_fret >= 20:
-                can_sound_correctly = False
                 break
 
             # 一つ下の弦に音を移動させる
-            copied_value = np.copy(reversed_copied_array[string, prev_sounding_fret])
-            reversed_copied_array[string + 1][next_string_fret] = copied_value
+            copied_value = np.copy(reversed_copied_array[string, current_sounding_fret])
+            reversed_copied_array[string - 1][next_string_fret] = copied_value
 
             # 移動先の弦が元々ミュートしていた場合、そのフレット情報を更新する
-            if reversed_copied_array[string + 1][-1] == 1:
-                reversed_copied_array[string + 1][-1] = 0
+            if reversed_copied_array[string - 1][-1] == 1:
+                reversed_copied_array[string - 1][-1] = 0
 
             # 移動元の弦の状態を更新する
-            reversed_copied_array[string][prev_sounding_fret] = 0
+            reversed_copied_array[string][current_sounding_fret] = 0
+            reversed_copied_array[string][-1] = 1
 
-            # 移動元の弦の状態を更新後、何も音の情報がない場合(移動先の弦が元々ミュートしていた場合)
-            if not np.any(reversed_copied_array[string] == 1):
-                reversed_copied_array[string][-1] = 1
-
-        if can_sound_correctly:
-            # 逆順にして戻す
-            same_note_list.append(reversed_copied_array[::-1])
+        # 逆順にして戻す
+        same_note_list.append(reversed_copied_array[::-1])
 
     return same_note_list
 
@@ -203,7 +191,7 @@ def get_same_note_nodes(note):
         for i in range(len(same_note_with_one_move)):
             same_note_nodes.append(same_note_with_one_move[i])
 
-        same_note_positions = get_same_note_positions(note)
+        same_note_positions = get_same_note_with_multiple_moves(note)
         for i in range(len(same_note_positions)):
             same_note_nodes.append(same_note_positions[i])
 
