@@ -40,7 +40,7 @@ class TestGetSameNote(unittest.TestCase):
 
         same_note_list = get_same_note_nodes(input_edge_array)
         print(same_note_list)
-        estimated_note_list_length = 5
+        estimated_note_list_length = 4
 
         self.assertEqual(len(same_note_list), estimated_note_list_length)
 
