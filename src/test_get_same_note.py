@@ -39,10 +39,27 @@ class TestGetSameNote(unittest.TestCase):
         )
 
         same_note_list = get_same_note_nodes(input_edge_array)
-        print(same_note_list)
+        # print(same_note_list)
         estimated_note_list_length = 4
 
         self.assertEqual(len(same_note_list), estimated_note_list_length)
+
+        input_edge_array2 = np.array(
+            [
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            ]
+        )
+
+        same_note_list2 = get_same_note_nodes(input_edge_array2)
+        print(same_note_list2)
+        estimated_note_list_length = 5
+
+        self.assertEqual(len(same_note_list2), estimated_note_list_length)
 
 
 if __name__ == "__main__":

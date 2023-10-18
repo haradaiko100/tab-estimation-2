@@ -142,7 +142,8 @@ if __name__ == "__main__":
     npz_data = np.load(npz_filename_list[2])
     print(npz_filename_list[2])
     note_pred = npz_data["note_tab_pred"]
-    print(npz_data["note_tab_gt"].shape)
+    print(note_pred[8])
+    # print(npz_data["note_tab_gt"].shape)
     # frame_pred = npz_data["frame_tab_pred"]
     # print(frame_pred.shape)
     print(note_pred.shape)
