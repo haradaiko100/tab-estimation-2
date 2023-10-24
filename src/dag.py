@@ -22,6 +22,11 @@ import tqdm
 import networkx as nx
 
 
+def remove_duplicates(seq):
+    seen = set()
+    return [x for x in seq if x not in seen and not seen.add(x)]
+
+
 def save_npz_notes(npz_file_path, graph_tab_data, note_F0_from_tab_graph_pred):
     # 既存のnpzファイルを読み込む
     existing_data = np.load(npz_file_path)
