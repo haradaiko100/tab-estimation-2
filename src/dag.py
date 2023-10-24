@@ -231,7 +231,8 @@ def estimate_tab_from_pred(tab: np.ndarray):
         current_stopping_point_index = stopping_point_node_list[i]
 
     # 重複あったら削除する
-    shortest_path_list = list(set(shortest_path_list))
+    # shortest_path_list = list(set(shortest_path_list))
+    shortest_path_list = remove_duplicates(shortest_path_list)
 
     # shortest_path = nx.dijkstra_path(
     #     G=DG, source=1, target=dest_node_count, weight="weight"
