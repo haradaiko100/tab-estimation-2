@@ -187,8 +187,10 @@ def estimate_tab_from_pred(tab: np.ndarray):
 
         else:
             # get_same_note_nodes内でありえないノードは含まれないようにしたい
-            same_note_nodes = get_same_note_nodes(note)  # numpyの配列
-            prev_time_nodes = get_same_time_nodes_from_graph(DG, prev_time)
+            same_note_nodes = get_same_note_nodes(note)  # pythonのリスト
+            prev_time_nodes = get_same_time_nodes_from_graph(
+                DG, prev_time
+            )  # この配列のdataプロパティはnumpyの配列
 
             # 小節の区切りに当たるCNNからのノードを記録
             if (note_index + 1) % 16 == 0:
@@ -210,8 +212,11 @@ def estimate_tab_from_pred(tab: np.ndarray):
                 # エッジ追加
                 for current_node in same_note_nodes:
                     for prev_node in prev_time_nodes:
+                        current_note_being_numpy_list_shape = np.array(current_node)
+                        prev_note_being_numpy_list_shape = np.array(prev_node["data"])
                         weight = calc_weight_between_notes(
-                            current_note=current_node, prev_note=prev_node["data"]
+                            current_note=current_note_being_numpy_list_shape,
+                            prev_note=prev_note_being_numpy_list_shape,
                         )
                         DG.add_edge(prev_node["count"], node_count, weight=weight)
 
