@@ -57,13 +57,20 @@ class TestDijkstraAlgorithm(unittest.TestCase):
         self.assertEqual(weight_A_is_lower_than_B, expected_result)
 
     def test_dag_E_to_E(self):
-
         tab = np.array(
             [
                 [
                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                ],
+                [
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -130,13 +137,13 @@ class TestDijkstraAlgorithm(unittest.TestCase):
                                 prev_node["data"]
                             )
                             weight = calc_weight_between_notes(
-                                current_note=current_note_being_numpy_list_shape,
                                 prev_note=prev_note_being_numpy_list_shape,
+                                current_note=current_note_being_numpy_list_shape,
                             )
                             DG.add_edge(prev_node["count"], node_count, weight=weight)
 
-                        # エッジ追加後にインクリメント
-                        node_count += 1
+                    # エッジ追加後にインクリメント
+                    node_count += 1
 
             # 時間をインクリメント
             prev_time = current_time
