@@ -201,24 +201,23 @@ def estimate_tab_from_pred(tab: np.ndarray):
                 dest_node_count = node_count
 
             # グラフにノード追加
-            for i in range(len(same_note_nodes)):
+            for current_node in same_note_nodes:
                 DG.add_node(
                     node_count,
-                    data=same_note_nodes[i],
+                    data=current_node,
                     time=current_time,
                     count=node_count,
                 )
 
                 # エッジ追加
-                for current_node in same_note_nodes:
-                    for prev_node in prev_time_nodes:
-                        current_note_being_numpy_list_shape = np.array(current_node)
-                        prev_note_being_numpy_list_shape = np.array(prev_node["data"])
-                        weight = calc_weight_between_notes(
-                            current_note=current_note_being_numpy_list_shape,
-                            prev_note=prev_note_being_numpy_list_shape,
-                        )
-                        DG.add_edge(prev_node["count"], node_count, weight=weight)
+                for prev_node in prev_time_nodes:
+                    current_note_being_numpy_list_shape = np.array(current_node)
+                    prev_note_being_numpy_list_shape = np.array(prev_node["data"])
+                    weight = calc_weight_between_notes(
+                        current_note=current_note_being_numpy_list_shape,
+                        prev_note=prev_note_being_numpy_list_shape,
+                    )
+                    DG.add_edge(prev_node["count"], node_count, weight=weight)
 
                 # エッジ追加後にインクリメント
                 node_count += 1

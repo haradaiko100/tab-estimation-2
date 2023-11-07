@@ -121,26 +121,28 @@ class TestDijkstraAlgorithm(unittest.TestCase):
                     dest_node_count = node_count
 
                 # グラフにノード追加
-                for i in range(len(same_note_nodes)):
+                for current_node in same_note_nodes:
                     DG.add_node(
                         node_count,
-                        data=same_note_nodes[i],
+                        data=current_node,
                         time=current_time,
                         count=node_count,
                     )
 
                     # エッジ追加
-                    for current_node in same_note_nodes:
-                        for prev_node in prev_time_nodes:
-                            current_note_being_numpy_list_shape = np.array(current_node)
-                            prev_note_being_numpy_list_shape = np.array(
-                                prev_node["data"]
-                            )
-                            weight = calc_weight_between_notes(
-                                prev_note=prev_note_being_numpy_list_shape,
-                                current_note=current_note_being_numpy_list_shape,
-                            )
-                            DG.add_edge(prev_node["count"], node_count, weight=weight)
+                    for prev_node in prev_time_nodes:
+                        current_note_being_numpy_list_shape = np.array(current_node)
+                        prev_note_being_numpy_list_shape = np.array(prev_node["data"])
+                        weight = calc_weight_between_notes(
+                            prev_note=prev_note_being_numpy_list_shape,
+                            current_note=current_note_being_numpy_list_shape,
+                        )
+                        # print(
+                        #     "weight {0} to {1}: {2}".format(
+                        #         prev_node["count"], node_count, weight
+                        #     ),
+                        # )
+                        DG.add_edge(prev_node["count"], node_count, weight=weight)
 
                     # エッジ追加後にインクリメント
                     node_count += 1
@@ -177,12 +179,18 @@ class TestDijkstraAlgorithm(unittest.TestCase):
 
         # self.assertEqual(estimated_result_truth,result)
 
-        for node, data in DG.nodes(data=True):
-            print(f'Node {node}: {data["data"]}')
+        # for node, data in DG.nodes(data=True):
+        #     print(f'Node {node}: {data["data"]}')
+
+        # ノードのプロパティとともに出力
+        # for node, data in DG.nodes(data=True):
+        #     print(f"Node {node}:")
+        #     for key, value in data.items():
+        #         print(f"  {key}: {value}")
 
         # 各エッジの重みを出力
-        for u, v, w in DG.edges(data=True):
-            print(f'Edge ({u}, {v}) has weight: {w["weight"]}')
+        # for u, v, w in DG.edges(data=True):
+        #     print(f'Edge ({u}, {v}) has weight: {w["weight"]}')
 
         print(estimated_tab)
 
