@@ -489,7 +489,7 @@ def main():
         result_path,
         f"{mode}",
         trained_model + f"_epoch{use_model_epoch}",
-        "metrics.csv",
+        "metrics2.csv",
     )
     for test_num in range(6):
         print(f"Player No. {test_num}")
