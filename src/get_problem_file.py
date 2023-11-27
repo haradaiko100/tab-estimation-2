@@ -5,12 +5,13 @@ from predict import tab2pitch
 from const import GUITAR_SOUND_MATRICS
 
 
-# 関数の名前ひどいから後で変える
-def get_issue_data(tab, pred_tab):
+# この関数の引数は、教師データと出力されたデータのタブ譜だけ
+# この関数を2回使うことで、関連研究の出力と自分のシステムの方の出力を比較する
+def save_same_sound_on_different_strings(tab, pred_tab):
     copied_tab = np.copy(tab)
     copied_pred_tab = np.copy(pred_tab)
 
-    # 教師データと合っている正しい弦とフレットの組み合わせを削除する
+    # 正しい弦とフレットの組み合わせを削除する（教師データと出力されたデータから）
     for note_index, note in enumerate(copied_tab):
         for string_index, sound_on_specific_string_list in enumerate(note):
             fret_position = np.argmax(sound_on_specific_string_list)
@@ -28,25 +29,24 @@ def get_issue_data(tab, pred_tab):
                 copied_tab[note_index][string_index][-1] = 1
 
     for note_index, note in enumerate(copied_tab):
-        # 残った音の中で、鳴っている弦とフレットのペアを算出する
         sounding_pairs = {}
+
+        # 教師データで残った音から、異弦同音を算出する
         for string_index, sound_on_specific_string_list in enumerate(note):
             fret_position = np.argmax(sound_on_specific_string_list)
             if fret_position != 20:
-                sound_on_string_fret_pairs = get_finger_positions_on_specific_sound(
+                same_sound_string_fret_pairs = get_finger_positions_on_specific_sound(
                     fret_position, string_index
                 )
 
-                for string, fret in sound_on_string_fret_pairs.items():
+                for string, fret in same_sound_string_fret_pairs.items():
                     if string in sounding_pairs:
                         sounding_pairs[string].append(fret)
                     else:
                         # 配列にキーが存在しない場合、新しいキーを作成して値を追加
                         sounding_pairs[string] = [fret]
 
-        # 各弦の押している位置を取得(教師データの方)
-        # finger_positions = np.argmax(note, axis=1)
-
+        # 出力に含まれる弦とフレットの組み合わせが異弦同音と同じかどうかを判定
         for string_index, pred_sound_on_specific_string_list in enumerate(
             copied_pred_tab[note_index]
         ):
@@ -63,28 +63,6 @@ def get_issue_data(tab, pred_tab):
                 if is_same_sound_on_different_strings:
                     # 音を保存する処理
                     pass
-
-        # 異弦同音となる音を取得する
-        # for string_index, sound_on_specific_string_list in enumerate(note):
-        #     fret_position = np.argmax(sound_on_specific_string_list)
-
-        #     # ミュートの場合はスキップ
-
-        #     same_sound_on_different_strings = get_finger_positions_on_specific_sound(
-        #         fret=fret_position, string=string_index
-        #     )
-
-        #     # 予測されたタブ譜において、同じ音が鳴っている箇所を取得する
-        #     pred_tab_note = copied_pred_tab[note_index]
-
-        #     # 異弦同音と関連研究の出力が一致していたら、その音を保存する
-        #     is_same_sound_on_different_strings = get_specific_pair_exits_or_not(
-        #         same_sound_on_different_strings, string_index, fret_position
-        #     )
-
-        #     if is_same_sound_on_different_strings:
-        #         # 音を保存する処理
-        #         pass
 
 
 def is_value_in_list_of_key(dictionary, target_key, target_value):
