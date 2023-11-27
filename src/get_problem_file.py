@@ -2,17 +2,104 @@ import os
 import argparse
 import numpy as np
 from predict import tab2pitch
-from src.const.const import GUITAR_SOUND_MATRICS
+from const import GUITAR_SOUND_MATRICS
 
 
 # 関数の名前ひどいから後で変える
 def get_issue_data(tab, pred_tab):
-    # まず正解のタブ譜と予測されたタブ譜において、正解となる音は排除する必要がある
-    # 排除するのは教師データの方だけで良い事に注意
+    copied_tab = np.copy(tab)
+    copied_pred_tab = np.copy(pred_tab)
 
-    pass
+    # 教師データと合っている正しい弦とフレットの組み合わせを削除する
+    for note_index, note in enumerate(copied_tab):
+        for string_index, sound_on_specific_string_list in enumerate(note):
+            fret_position = np.argmax(sound_on_specific_string_list)
+            pred_tab_note_fret_position = np.argmax(
+                copied_pred_tab[note_index][string_index]
+            )
+
+            if fret_position != 20 and fret_position == pred_tab_note_fret_position:
+                # 元々鳴っていた音を削除
+                sound_on_specific_string_list[fret_position] = 0
+                copied_tab[note_index][string_index][pred_tab_note_fret_position] = 0
+
+                # ミュートしている音として扱うようにする
+                sound_on_specific_string_list[-1] = 1
+                copied_tab[note_index][string_index][-1] = 1
+
+    for note_index, note in enumerate(copied_tab):
+        # 残った音の中で、鳴っている弦とフレットのペアを算出する
+        sounding_pairs = {}
+        for string_index, sound_on_specific_string_list in enumerate(note):
+            fret_position = np.argmax(sound_on_specific_string_list)
+            if fret_position != 20:
+                sound_on_string_fret_pairs = get_finger_positions_on_specific_sound(
+                    fret_position, string_index
+                )
+
+                for string, fret in sound_on_string_fret_pairs.items():
+                    if string in sounding_pairs:
+                        sounding_pairs[string].append(fret)
+                    else:
+                        # 配列にキーが存在しない場合、新しいキーを作成して値を追加
+                        sounding_pairs[string] = [fret]
+
+        # 各弦の押している位置を取得(教師データの方)
+        # finger_positions = np.argmax(note, axis=1)
+
+        for string_index, pred_sound_on_specific_string_list in enumerate(
+            copied_pred_tab[note_index]
+        ):
+            fret_position = np.argmax(pred_sound_on_specific_string_list)
+
+            # ミュート以外の場合について
+            if fret_position != 20:
+                is_same_sound_on_different_strings = is_value_in_list_of_key(
+                    sounding_pairs,
+                    string_index,
+                    fret_position,
+                )
+
+                if is_same_sound_on_different_strings:
+                    # 音を保存する処理
+                    pass
+
+        # 異弦同音となる音を取得する
+        # for string_index, sound_on_specific_string_list in enumerate(note):
+        #     fret_position = np.argmax(sound_on_specific_string_list)
+
+        #     # ミュートの場合はスキップ
+
+        #     same_sound_on_different_strings = get_finger_positions_on_specific_sound(
+        #         fret=fret_position, string=string_index
+        #     )
+
+        #     # 予測されたタブ譜において、同じ音が鳴っている箇所を取得する
+        #     pred_tab_note = copied_pred_tab[note_index]
+
+        #     # 異弦同音と関連研究の出力が一致していたら、その音を保存する
+        #     is_same_sound_on_different_strings = get_specific_pair_exits_or_not(
+        #         same_sound_on_different_strings, string_index, fret_position
+        #     )
+
+        #     if is_same_sound_on_different_strings:
+        #         # 音を保存する処理
+        #         pass
 
 
+def is_value_in_list_of_key(dictionary, target_key, target_value):
+    if target_key in dictionary:
+        value_array = dictionary[target_key]
+        return target_value in value_array
+    return False
+
+
+# def get_specific_pair_exits_or_not(dictionary, target_key, target_value):
+#     return target_key in dictionary and dictionary[target_key] == target_value
+
+
+# 出力は{string: fret}の形式
+# 形式を配列にしなかったのは、必ずしも要素数が6になるとは限らないため
 def get_finger_positions_on_specific_sound(fret, string):
     same_sound_different_strings = {}
 
@@ -27,32 +114,6 @@ def get_finger_positions_on_specific_sound(fret, string):
                 same_sound_different_strings[row_index] = col_index
 
     return same_sound_different_strings
-
-
-def find_value_positions(matrix, target_value):
-    positions = []
-
-    for row_index, row in enumerate(matrix):
-        for col_index, value in enumerate(row):
-            if value == target_value:
-                positions.append((row_index, col_index))
-
-    return positions
-
-
-# 例として、次のような二次元配列を使ってみます
-# example_matrix = [
-#     [1, 2, 3, 4],
-#     [5, 6, 7, 8],
-#     [9, 2, 11, 12],
-#     [13, 14, 2, 16]
-# ]
-
-# target_value = 2
-
-# result = find_value_positions(example_matrix, target_value)
-# print(f"Target Value: {target_value}")
-# print("Positions:", result)
 
 
 def get_problem_files_name():
