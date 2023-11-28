@@ -5,9 +5,109 @@ from predict import tab2pitch
 from const import GUITAR_SOUND_MATRICS
 
 
+def get_common_pairs_from_both_dicts(dict1, dict2):
+    common_pairs = [
+        (key, value)
+        for key, value in dict1.items()
+        if key in dict2 and dict2[key] == value
+    ]
+    return common_pairs
+
+
 # この関数の引数は、教師データと出力されたデータのタブ譜だけ
 # この関数を2回使うことで、関連研究の出力と自分のシステムの方の出力を比較する
-def save_same_sound_on_different_strings(tab, pred_tab):
+def save_same_sound_issue_data(tab, pred_tab):
+    tab_same_sound_issue_data_list = []
+    pred_same_sound_issue_data_list = []
+
+    all_muted_note = np.array(
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        ]
+    )
+
+    copied_tab = np.copy(tab)
+    copied_pred_tab = np.copy(pred_tab)
+
+    # 正しい弦とフレットの組み合わせを削除する（教師データと出力されたデータから）
+    for note_index, note in enumerate(copied_tab):
+        for string_index, sound_on_specific_string_list in enumerate(note):
+            fret_position = np.argmax(sound_on_specific_string_list)
+            pred_tab_note_fret_position = np.argmax(
+                copied_pred_tab[note_index][string_index]
+            )
+
+            if fret_position != 20 and fret_position == pred_tab_note_fret_position:
+                # 元々鳴っていた音を削除
+                sound_on_specific_string_list[fret_position] = 0
+                copied_tab[note_index][string_index][pred_tab_note_fret_position] = 0
+
+                # ミュートしている音として扱うようにする
+                sound_on_specific_string_list[-1] = 1
+                copied_tab[note_index][string_index][-1] = 1
+
+    for note_index, note in enumerate(copied_tab):
+        tab_specific_issue_data = np.zeros((6, 21))  # 教師データ
+        pred_specific_issue_data = np.zeros((6, 21))  # 出力の方のデータ
+
+        pred_fingers_positions = np.argmax(note, axis=1)
+        pred_sounding_fingers_positions = [
+            elem for elem in pred_fingers_positions
+        ]  # numpy配列から鳴っているフレットの情報を取得
+
+        pred_sounding_fingers_dict = {
+            index: value for index, value in enumerate(pred_sounding_fingers_positions)
+        }
+
+        for string_index, sound_on_specific_string_list in enumerate(note):
+            fret_position = np.argmax(sound_on_specific_string_list)
+
+            # 各弦で教師データで残った音から、異弦同音を算出
+            if fret_position == 20:
+                tab_specific_issue_data[string_index][-1] = 1
+                pred_specific_issue_data[string_index][-1] = 1
+                continue
+
+            else:
+                same_sound_string_fret_pairs = get_finger_positions_on_specific_sound(
+                    fret_position, string_index
+                )
+
+                common_string_fret_pairs = get_common_pairs_from_both_dicts(
+                    same_sound_string_fret_pairs, pred_sounding_fingers_dict
+                )
+
+                # 異弦同音だったとき
+                if common_string_fret_pairs:
+                    pred_issue_string = common_string_fret_pairs[0][0]
+                    pred_issue_fret = common_string_fret_pairs[0][1]
+
+                    tab_specific_issue_data[string_index][fret_position] = 1  # 教師データ
+                    pred_specific_issue_data[pred_issue_string][
+                        pred_issue_fret
+                    ] = 1  # 出力の方のデータ
+
+                else:
+                    # 単純に音の高さが違う場合は、ミュートとして修正
+                    tab_specific_issue_data[string_index][-1] = 1
+                    pred_specific_issue_data[string_index][-1] = 1
+
+        if not np.array_equal(pred_specific_issue_data, all_muted_note):
+            tab_same_sound_issue_data_list.append(tab_specific_issue_data)
+            pred_same_sound_issue_data_list.append(pred_specific_issue_data)
+
+    return {
+        "tab": tab_same_sound_issue_data_list,
+        "pred": pred_same_sound_issue_data_list,
+    }
+
+
+def is_same_sound_issue(tab, pred_tab):
     copied_tab = np.copy(tab)
     copied_pred_tab = np.copy(pred_tab)
 
@@ -61,8 +161,9 @@ def save_same_sound_on_different_strings(tab, pred_tab):
                 )
 
                 if is_same_sound_on_different_strings:
-                    # 音を保存する処理
-                    pass
+                    return True
+
+    return False
 
 
 def is_value_in_list_of_key(dictionary, target_key, target_value):
