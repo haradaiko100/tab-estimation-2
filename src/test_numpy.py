@@ -88,9 +88,7 @@ def main():
 
 
 if __name__ == "__main__":
-    # main()
-    result = get_finger_positions_on_specific_sound(5, 5)
-    print(result)
+    main()
     # get_sounding_string_fret_pairs_dict(next_note_B)
     # サンプルの辞書を作成
     # dict1 = {0: 1, 1: 2, 2: 3, "d": 4}

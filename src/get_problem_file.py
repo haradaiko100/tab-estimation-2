@@ -80,8 +80,6 @@ def get_same_sound_issue_data(tab, pred_tab):
             key: value for key, value in pred_fingers_dict.items() if value != 20
         }
 
-        print("{0}番目: {1}".format(note_index, pred_sounding_fingers_dict))
-
         for string_index, sound_on_specific_string_list in enumerate(note):
             fret_position = np.argmax(sound_on_specific_string_list)
 
