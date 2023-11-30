@@ -14,9 +14,16 @@ def get_common_pairs_from_both_dicts(dict1, dict2):
     return common_pairs
 
 
+def save_same_sound_issue_data(tab, pred_tab):
+    same_sound_issue_data_dict = get_same_sound_issue_data(tab, pred_tab)
+
+    tab_data_in_npz = np.array(same_sound_issue_data_dict["tab"])
+    pred_data_in_npz = np.array(same_sound_issue_data_dict["pred"])
+
+
 # この関数の引数は、教師データと出力されたデータのタブ譜だけ
 # この関数を2回使うことで、関連研究の出力と自分のシステムの方の出力を比較する
-def save_same_sound_issue_data(tab, pred_tab):
+def get_same_sound_issue_data(tab, pred_tab):
     tab_same_sound_issue_data_list = []
     pred_same_sound_issue_data_list = []
 
@@ -55,14 +62,21 @@ def save_same_sound_issue_data(tab, pred_tab):
         tab_specific_issue_data = np.zeros((6, 21))  # 教師データ
         pred_specific_issue_data = np.zeros((6, 21))  # 出力の方のデータ
 
-        pred_fingers_positions = np.argmax(note, axis=1)
-        pred_sounding_fingers_positions = [
+        pred_fingers_positions = np.argmax(copied_pred_tab[note_index], axis=1)
+        pred_fingers_positions = [
             elem for elem in pred_fingers_positions
         ]  # numpy配列から鳴っているフレットの情報を取得
 
-        pred_sounding_fingers_dict = {
-            index: value for index, value in enumerate(pred_sounding_fingers_positions)
+        pred_fingers_dict = {
+            index: value for index, value in enumerate(pred_fingers_positions)
         }
+
+        # ミュート(インデックスが20)の弦の要素を辞書から削除
+        pred_sounding_fingers_dict = {
+            key: value for key, value in pred_fingers_dict.items() if value != 20
+        }
+
+        print("{0}番目: {1}".format(note_index, pred_sounding_fingers_dict))
 
         for string_index, sound_on_specific_string_list in enumerate(note):
             fret_position = np.argmax(sound_on_specific_string_list)
@@ -75,12 +89,15 @@ def save_same_sound_issue_data(tab, pred_tab):
 
             else:
                 same_sound_string_fret_pairs = get_finger_positions_on_specific_sound(
-                    fret_position, string_index
+                    string=string_index, fret=fret_position
                 )
 
+                print("same: ",same_sound_string_fret_pairs)
                 common_string_fret_pairs = get_common_pairs_from_both_dicts(
                     same_sound_string_fret_pairs, pred_sounding_fingers_dict
                 )
+
+                print("common: ",common_string_fret_pairs)
 
                 # 異弦同音だったとき
                 if common_string_fret_pairs:
@@ -136,7 +153,7 @@ def is_same_sound_issue(tab, pred_tab):
             fret_position = np.argmax(sound_on_specific_string_list)
             if fret_position != 20:
                 same_sound_string_fret_pairs = get_finger_positions_on_specific_sound(
-                    fret_position, string_index
+                    string=string_index, fret=fret_position
                 )
 
                 for string, fret in same_sound_string_fret_pairs.items():
@@ -179,7 +196,7 @@ def is_value_in_list_of_key(dictionary, target_key, target_value):
 
 # 出力は{string: fret}の形式
 # 形式を配列にしなかったのは、必ずしも要素数が6になるとは限らないため
-def get_finger_positions_on_specific_sound(fret, string):
+def get_finger_positions_on_specific_sound(string, fret):
     same_sound_different_strings = {}
 
     if fret >= len(GUITAR_SOUND_MATRICS[string]):
@@ -189,7 +206,7 @@ def get_finger_positions_on_specific_sound(fret, string):
 
     for row_index, row in enumerate(GUITAR_SOUND_MATRICS):
         for col_index, value in enumerate(row):
-            if value == target_value:
+            if col_index != 20 and value == target_value:
                 same_sound_different_strings[row_index] = col_index
 
     return same_sound_different_strings
