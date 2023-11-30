@@ -1,5 +1,8 @@
 import numpy as np
-from get_problem_file import get_same_sound_issue_data
+from get_problem_file import (
+    get_finger_positions_on_specific_sound,
+    get_same_sound_issue_data,
+)
 
 
 def get_sounding_string_fret_pairs_dict(note):
@@ -80,12 +83,14 @@ def main():
         ]
     )
 
-    result = get_same_sound_issue_data(tab, pred_tab)
+    result = get_same_sound_issue_data(tab=tab, pred_tab=pred_tab)
     print(result)
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    result = get_finger_positions_on_specific_sound(5, 5)
+    print(result)
     # get_sounding_string_fret_pairs_dict(next_note_B)
     # サンプルの辞書を作成
     # dict1 = {0: 1, 1: 2, 2: 3, "d": 4}

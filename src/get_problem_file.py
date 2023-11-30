@@ -62,6 +62,10 @@ def get_same_sound_issue_data(tab, pred_tab):
         tab_specific_issue_data = np.zeros((6, 21))  # 教師データ
         pred_specific_issue_data = np.zeros((6, 21))  # 出力の方のデータ
 
+        # 21列目の要素を1に変更
+        tab_specific_issue_data[:, 20] = 1
+        pred_specific_issue_data[:, 20] = 1
+
         pred_fingers_positions = np.argmax(copied_pred_tab[note_index], axis=1)
         pred_fingers_positions = [
             elem for elem in pred_fingers_positions
@@ -82,22 +86,14 @@ def get_same_sound_issue_data(tab, pred_tab):
             fret_position = np.argmax(sound_on_specific_string_list)
 
             # 各弦で教師データで残った音から、異弦同音を算出
-            if fret_position == 20:
-                tab_specific_issue_data[string_index][-1] = 1
-                pred_specific_issue_data[string_index][-1] = 1
-                continue
-
-            else:
+            if fret_position != 20:
                 same_sound_string_fret_pairs = get_finger_positions_on_specific_sound(
                     string=string_index, fret=fret_position
                 )
 
-                print("same: ",same_sound_string_fret_pairs)
                 common_string_fret_pairs = get_common_pairs_from_both_dicts(
                     same_sound_string_fret_pairs, pred_sounding_fingers_dict
                 )
-
-                print("common: ",common_string_fret_pairs)
 
                 # 異弦同音だったとき
                 if common_string_fret_pairs:
@@ -109,10 +105,9 @@ def get_same_sound_issue_data(tab, pred_tab):
                         pred_issue_fret
                     ] = 1  # 出力の方のデータ
 
-                else:
-                    # 単純に音の高さが違う場合は、ミュートとして修正
-                    tab_specific_issue_data[string_index][-1] = 1
-                    pred_specific_issue_data[string_index][-1] = 1
+                    # ミュートとしている部分を修正
+                    tab_specific_issue_data[string_index][-1] = 0
+                    pred_specific_issue_data[pred_issue_string][-1] = 0
 
         if not np.array_equal(pred_specific_issue_data, all_muted_note):
             tab_same_sound_issue_data_list.append(tab_specific_issue_data)
