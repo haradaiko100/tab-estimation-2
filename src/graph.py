@@ -139,10 +139,13 @@ if __name__ == "__main__":
     #         os.path.join(npz_dir, f"test_0{test_num}", "*"))
     npz_filename_list = glob.glob(os.path.join(npz_dir, "test_00", "*"))
 
-    npz_data = np.load(npz_filename_list[2])
-    print(npz_filename_list[2])
+    npz_data = np.load(npz_filename_list[0])
+    print(npz_filename_list[0])
     note_pred = npz_data["note_tab_pred"]
-    print(note_pred[8])
+
+    keys_list = list(npz_data.keys())
+    print(keys_list)
+    # print(note_pred[8])
     # print(npz_data["note_tab_gt"].shape)
     # frame_pred = npz_data["frame_tab_pred"]
     # print(frame_pred.shape)

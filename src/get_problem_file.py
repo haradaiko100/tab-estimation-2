@@ -22,8 +22,9 @@ def save_same_same_sound_issue_data_in_npz(
     new_npz_file_path,
     mode,
 ):
-    # 既存のNPZファイルからデータを読み込む
+    # 既存のnpzファイルからデータを読み込む
     existing_data = np.load(existing_npz_path)
+    print("existing_npz_path: ", existing_npz_path)
 
     # 既存のデータを取得
     existing_data_dict = {key: existing_data[key] for key in existing_data.files}
@@ -90,6 +91,8 @@ def get_and_save_same_sound_issue_data(
             existing_npz_path=npz_file,
             mode="graph_tab",
         )
+
+        print(f"finished {os.path.split(npz_file)[1][:-4]}")
 
     return
 
