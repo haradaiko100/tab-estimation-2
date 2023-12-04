@@ -132,54 +132,6 @@ def estimate_tab_from_pred(tab: np.ndarray):
     stopping_point_node_list = []
     shortest_path_list = []
 
-    # for note_index, note in enumerate(tab):
-    #     if current_time == 0:
-    #         DG.add_node(node_count, data=note, time=current_time, count=node_count)
-    #         node_count += 1
-
-    #     else:
-    #         # get_same_note_nodes内でありえないノードは含まれないようにしたい
-    #         same_note_nodes = get_same_note_nodes(note)  # numpyの配列
-    #         prev_time_nodes = get_same_time_nodes_from_graph(DG, prev_time)
-
-    #         # 最短経路の目的地のノードを設定する
-    #         if note_index == len(tab) - 1:
-    #             dest_node_count = node_count
-
-    #         # グラフにノード追加
-    #         for i in range(len(same_note_nodes)):
-    #             DG.add_node(
-    #                 node_count,
-    #                 data=same_note_nodes[i],
-    #                 time=current_time,
-    #                 count=node_count,
-    #             )
-
-    #             # エッジ追加
-    #             for current_node in same_note_nodes:
-    #                 for prev_node in prev_time_nodes:
-    #                     weight = calc_weight_between_notes(
-    #                         current_note=current_node, prev_note=prev_node["data"]
-    #                     )
-    #                     DG.add_edge(prev_node["count"], node_count, weight=weight)
-
-    #             # エッジ追加後にインクリメント
-    #             node_count += 1
-
-    #     # 時間をインクリメント
-    #     prev_time = current_time
-    #     current_time += 1
-
-    # # shortest_path = nx.dijkstra_path(
-    # #     G=DG, source=1, target=node_count - 1, weight="weight"
-    # # )
-    # shortest_path = nx.dijkstra_path(
-    #     G=DG, source=1, target=dest_node_count, weight="weight"
-    # )
-
-    # # shortest_pathの実際のデータを取得する
-    # estimated_tab = [DG.nodes[node]["data"] for node in shortest_path]
-
     for note_index, note in enumerate(tab):
         if current_time == 0:
             DG.add_node(node_count, data=note, time=current_time, count=node_count)
@@ -240,12 +192,7 @@ def estimate_tab_from_pred(tab: np.ndarray):
         current_stopping_point_index = stopping_point_node_list[i]
 
     # 重複あったら削除する
-    # shortest_path_list = list(set(shortest_path_list))
     shortest_path_list = remove_duplicates(shortest_path_list)
-
-    # shortest_path = nx.dijkstra_path(
-    #     G=DG, source=1, target=dest_node_count, weight="weight"
-    # )
 
     # shortest_pathの実際のデータを取得する
     estimated_tab = [DG.nodes[node]["data"] for node in shortest_path_list]

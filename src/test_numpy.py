@@ -1,7 +1,7 @@
 import numpy as np
 from get_problem_file import (
     get_finger_positions_on_specific_sound,
-    get_same_sound_issue_data,
+    get_same_sound_issue_data_from_tab_and_CNN,
 )
 
 
@@ -83,7 +83,7 @@ def main():
         ]
     )
 
-    result = get_same_sound_issue_data(tab=tab, pred_tab=pred_tab)
+    result = get_same_sound_issue_data_from_tab_and_CNN(tab=tab, pred_tab=pred_tab)
     print(result)
 
 
