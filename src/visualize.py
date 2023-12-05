@@ -247,6 +247,8 @@ def visualize(npz_filename_list, kwargs):
             # グラフからのタブ譜の出力
             note_graph_pred = npz_file["note_tab_graph_pred"]
             frame_F0_from_tab_pred = npz_file["frame_F0_from_tab_pred"]
+            # 異弦同音の出力
+            same_sound_issue_graph_tab  = npz_file["graph_pred"]
             # グラフからのframe-levelでのF0の出力
             # frame_F0_from_tab_graph_pred = npz_file["frame_F0_from_tab_graph_pred"]
             frame_F0_gt = npz_file["frame_F0_gt"]
@@ -264,7 +266,7 @@ def visualize(npz_filename_list, kwargs):
         #     if mode == "F0"
         #     else (5 + encoder_layers * encoder_heads)
         # )
-        n_subplots = 8
+        n_subplots = 9
 
         plt.figure(figsize=(10, n_subplots * 3), dpi=200)
         plt.rc("axes", labelsize=15)
@@ -356,6 +358,12 @@ def visualize(npz_filename_list, kwargs):
             plt.subplot(n_subplots, 1, subplot_counter)
             plt.title("Predicted graph edited tablature")
             plot_tab(note_graph_pred, note_resolution)
+            subplot_counter = subplot_counter + 1
+
+            # 異弦同音の描画用
+            plt.subplot(n_subplots, 1, subplot_counter)
+            plt.title("Same sound issue tablature")
+            plot_tab(same_sound_issue_graph_tab, note_resolution)
             subplot_counter = subplot_counter + 1
 
             # frame level F0 converted from tab prediction
@@ -495,9 +503,16 @@ def main():
         npz_dir = os.path.join(
             "result", "F0", f"{trained_model}_epoch{use_model_epoch}", "npz"
         )
+    # elif mode == "tab":
+    #     npz_dir = os.path.join(
+    #         "result", "tab", f"{trained_model}_epoch{use_model_epoch}", "npz"
+    #     )
     elif mode == "tab":
         npz_dir = os.path.join(
-            "result", "tab", f"{trained_model}_epoch{use_model_epoch}", "npz"
+            "result",
+            "same_sound_issue_data",
+            f"{trained_model}_epoch{use_model_epoch}",
+            "npz",
         )
 
     for test_num in range(6):
