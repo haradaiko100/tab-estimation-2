@@ -159,7 +159,7 @@ def get_same_sound_issue_data_from_tab_and_graph(tab, graph_tab):
     pred_same_sound_issue_data_list_npz = np.array(pred_same_sound_issue_data_list)
 
     return {
-        "graph_pred": pred_same_sound_issue_data_list_npz,
+        "same_sound_issue_graph_tab": pred_same_sound_issue_data_list_npz,
     }
 
 
@@ -245,8 +245,8 @@ def get_same_sound_issue_data_from_tab_and_CNN(tab, pred_tab):
     pred_same_sound_issue_data_list_npz = np.array(pred_same_sound_issue_data_list)
 
     return {
-        "tab": tab_same_sound_issue_data_list_npz,
-        "cnn_pred": pred_same_sound_issue_data_list_npz,
+        "same_sound_issue_tab": tab_same_sound_issue_data_list_npz,
+        "same_sound_issue_pred_tab": pred_same_sound_issue_data_list_npz,
     }
 
 
