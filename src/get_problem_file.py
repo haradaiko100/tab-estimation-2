@@ -59,7 +59,7 @@ def save_same_same_sound_issue_data_in_npz(
 
 
 def get_and_save_same_sound_issue_data(
-    npz_filename_list, test_num, trained_model, use_model_epoch
+    npz_filename_list, test_num, trained_model, use_model_epoch, date
 ):
     npz_filename_list = npz_filename_list.split("\n")
 
@@ -67,6 +67,7 @@ def get_and_save_same_sound_issue_data(
         "result",
         "same_sound_issue_data",
         f"{trained_model}_epoch{use_model_epoch}",
+        date,
         "npz",
         f"test_0{test_num}",
     )
@@ -344,7 +345,7 @@ def main():
     parser.add_argument("epoch", type=int, help="number of model epoch to use: ex) 64")
     parser.add_argument(
         "directory_date", type=str, help="date of dag.py was carried out"
-    ) # dag.pyでできたディレクトリの日付を指定する
+    )  # dag.pyでできたディレクトリの日付を指定する
     args = parser.parse_args()
 
     trained_model = args.model
@@ -390,6 +391,7 @@ def main():
             test_num=test_num,
             trained_model=trained_model,
             use_model_epoch=use_model_epoch,
+            date=date,
         )
 
     return
