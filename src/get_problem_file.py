@@ -24,7 +24,6 @@ def save_same_same_sound_issue_data_in_npz(
 ):
     # 既存のnpzファイルからデータを読み込む
     existing_data = np.load(existing_npz_path)
-    print("existing_npz_path: ", existing_npz_path)
 
     # 既存のデータを取得
     existing_data_dict = {key: existing_data[key] for key in existing_data.files}
@@ -86,6 +85,8 @@ def get_and_save_same_sound_issue_data(
             mode="pred_tab",
         )
 
+    for npz_file in npz_filename_list:
+        npz_save_filename = os.path.join(npz_save_dir, os.path.split(npz_file)[1])
         # その後に、教師データとグラフの出力で異弦同音を抽出して保存
         save_same_same_sound_issue_data_in_npz(
             new_npz_file_path=npz_save_filename,
