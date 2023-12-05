@@ -512,6 +512,7 @@ def main():
             "result",
             "same_sound_issue_data",
             f"{trained_model}_epoch{use_model_epoch}",
+            date,
             "npz",
         )
 
@@ -527,7 +528,8 @@ def main():
         if mode == "tab":
             visualize_dir = os.path.join(
                 "result",
-                "tab_graph",
+                # "tab_graph",
+                "same_sound_issue_data",
                 f"{trained_model}_epoch{use_model_epoch}",
                 date,
                 "visualize",

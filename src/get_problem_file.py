@@ -343,18 +343,13 @@ def main():
     )
     parser.add_argument("epoch", type=int, help="number of model epoch to use: ex) 64")
     parser.add_argument(
-        "-v",
-        "--verbose",
-        help="option for verbosity: -v to turn on verbosity",
-        action="store_true",
-        required=False,
-        default=False,
-    )
+        "directory_date", type=str, help="date of dag.py was carried out"
+    ) # dag.pyでできたディレクトリの日付を指定する
     args = parser.parse_args()
 
     trained_model = args.model
     use_model_epoch = args.epoch
-    verbose = args.verbose
+    date = args.directory_date
 
     mode = "tab"
     n_cores = 12
@@ -368,10 +363,6 @@ def main():
             "result", "tab", f"{trained_model}_epoch{use_model_epoch}", "npz"
         )
 
-    now = datetime.now()
-    now_formated = now.strftime("%Y%m%d_%H%M%S")  # "%d/%m/%Y %H:%M:%S"
-    # print("Today's date: ", today_formated)
-
     result_path = os.path.join("result")
     if not os.path.exists(result_path):
         os.makedirs(result_path)
@@ -382,7 +373,7 @@ def main():
                 "result",
                 "same_sound_issue_data",
                 f"{trained_model}_epoch{use_model_epoch}",
-                now_formated,
+                date,
                 "visualize",
                 f"test_0{test_num}",
             )
