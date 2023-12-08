@@ -17,44 +17,40 @@ def get_common_pairs_from_both_dicts(dict1, dict2):
     return common_pairs
 
 
-def save_same_same_sound_issue_data_in_npz(
-    existing_npz_path,
-    new_npz_file_path,
-    mode,
-):
+def save_same_sound_issue_data_in_npz(existing_npz_path, new_npz_base_filename, mode):
+    new_npz_file_path = f"{new_npz_base_filename}_{mode}.npz"
+
     # 既存のnpzファイルからデータを読み込む
-    existing_data = np.load(existing_npz_path)
+    with np.load(existing_npz_path) as existing_data:
+        # 既存のデータを取得
+        existing_data_dict = {key: existing_data[key] for key in existing_data.files}
+        tab = existing_data["note_tab_gt"]
 
-    # 既存のデータを取得
-    existing_data_dict = {key: existing_data[key] for key in existing_data.files}
-    tab = existing_data["note_tab_gt"]
+        if mode == "pred_tab":
+            pred_tab = existing_data["note_tab_pred"]
+            same_sound_issue_data_dict = get_same_sound_issue_data_from_tab_and_CNN(
+                tab, pred_tab
+            )
 
-    if mode == "pred_tab":
-        pred_tab = existing_data["note_tab_pred"]
-        same_sound_issue_data_dict = get_same_sound_issue_data_from_tab_and_CNN(
-            tab, pred_tab
-        )
+        elif mode == "graph_tab":
+            graph_tab = existing_data["note_tab_graph_pred"]
+            same_sound_issue_data_dict = get_same_sound_issue_data_from_tab_and_graph(
+                tab, graph_tab
+            )
 
-    elif mode == "graph_tab":
-        graph_tab = existing_data["note_tab_graph_pred"]
-        same_sound_issue_data_dict = get_same_sound_issue_data_from_tab_and_graph(
-            tab, graph_tab
-        )
+        else:
+            raise ValueError("Invalid mode")
 
-    else:
-        print("mode is invalid")
-        return
+        # 新しいデータを既存のデータに結合または追加
+        for key, value in same_sound_issue_data_dict.items():
+            if key not in existing_data_dict:
+                existing_data_dict[key] = value
 
-    # 新しいデータを既存のデータに結合または追加
-    for key, value in same_sound_issue_data_dict.items():
-        if key not in existing_data_dict:
-            existing_data_dict[key] = value
+        # 新しいデータを含む辞書を作成
+        new_data = {**existing_data_dict}
 
-    # 新しいデータを含む辞書を作成
-    new_data = {**existing_data_dict}
-
-    # NPZファイルに保存
-    np.savez(new_npz_file_path, **new_data)
+        # npzファイルに保存
+        np.savez(new_npz_file_path, **new_data)
 
 
 def get_and_save_same_sound_issue_data(
@@ -76,11 +72,13 @@ def get_and_save_same_sound_issue_data(
 
     # 教師データとCNNから異弦同音のみを抽出して保存
     for npz_file in npz_filename_list:
-        npz_save_filename = os.path.join(npz_save_dir, os.path.split(npz_file)[1])
+        npz_save_filename = os.path.join(
+            npz_save_dir, os.path.split(npz_file)[1].split(".")[-2]
+        )
 
         # まず先に教師データとCNNの出力で異弦同音を抽出して保存
-        save_same_same_sound_issue_data_in_npz(
-            new_npz_file_path=npz_save_filename,
+        save_same_sound_issue_data_in_npz(
+            new_npz_base_filename=npz_save_filename,
             existing_npz_path=npz_file,
             mode="pred_tab",
         )
@@ -88,8 +86,8 @@ def get_and_save_same_sound_issue_data(
     for npz_file in npz_filename_list:
         npz_save_filename = os.path.join(npz_save_dir, os.path.split(npz_file)[1])
         # その後に、教師データとグラフの出力で異弦同音を抽出して保存
-        save_same_same_sound_issue_data_in_npz(
-            new_npz_file_path=npz_save_filename,
+        save_same_sound_issue_data_in_npz(
+            new_npz_base_filename=npz_save_filename,
             existing_npz_path=npz_file,
             mode="graph_tab",
         )

@@ -141,6 +141,7 @@ if __name__ == "__main__":
 
     npz_data = np.load(npz_filename_list[0])
     print(npz_filename_list[0])
+    print(os.path.split(npz_filename_list[0])[1])
     note_pred = npz_data["note_tab_pred"]
 
     keys_list = list(npz_data.keys())
