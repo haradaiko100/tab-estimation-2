@@ -17,8 +17,10 @@ def get_common_pairs_from_both_dicts(dict1, dict2):
     return common_pairs
 
 
-def save_same_sound_issue_data_in_npz(existing_npz_path, new_npz_base_filename, mode):
-    new_npz_file_path = f"{new_npz_base_filename}_{mode}.npz"
+def save_same_sound_issue_data_in_npz(
+    existing_npz_path, new_npz_base_filename, func_mode
+):
+    # new_npz_file_path = f"{new_npz_base_filename}_{mode}.npz"
 
     # 既存のnpzファイルからデータを読み込む
     with np.load(existing_npz_path) as existing_data:
@@ -26,13 +28,13 @@ def save_same_sound_issue_data_in_npz(existing_npz_path, new_npz_base_filename, 
         existing_data_dict = {key: existing_data[key] for key in existing_data.files}
         tab = existing_data["note_tab_gt"]
 
-        if mode == "pred_tab":
+        if func_mode == "pred_tab":
             pred_tab = existing_data["note_tab_pred"]
             same_sound_issue_data_dict = get_same_sound_issue_data_from_tab_and_CNN(
                 tab, pred_tab
             )
 
-        elif mode == "graph_tab":
+        elif func_mode == "graph_tab":
             graph_tab = existing_data["note_tab_graph_pred"]
             same_sound_issue_data_dict = get_same_sound_issue_data_from_tab_and_graph(
                 tab, graph_tab
@@ -50,14 +52,12 @@ def save_same_sound_issue_data_in_npz(existing_npz_path, new_npz_base_filename, 
         new_data = {**existing_data_dict}
 
         # npzファイルに保存
-        np.savez(new_npz_file_path, **new_data)
+        np.savez(new_npz_base_filename, **new_data)
 
 
 def get_and_save_same_sound_issue_data(
-    npz_filename_list, test_num, trained_model, use_model_epoch, date
+    npz_filename_list, test_num, trained_model, use_model_epoch, date, func_mode
 ):
-    npz_filename_list = npz_filename_list.split("\n")
-
     npz_save_dir = os.path.join(
         "result",
         "same_sound_issue_data",
@@ -70,31 +70,44 @@ def get_and_save_same_sound_issue_data(
     if not (os.path.exists(npz_save_dir)):
         os.makedirs(npz_save_dir)
 
-    # 教師データとCNNから異弦同音のみを抽出して保存
-    for npz_file in npz_filename_list:
-        npz_save_filename = os.path.join(
-            npz_save_dir, os.path.split(npz_file)[1].split(".")[-2]
-        )
+    # func_mode = "pred_tab" or "graph_tab"であることに注意
+    if func_mode == "pred_tab":
+        npz_filename_list = npz_filename_list.split("\n")
 
-        # まず先に教師データとCNNの出力で異弦同音を抽出して保存
+    if func_mode == "graph_tab":
+        npz_dir = os.path.join(
+            "result",
+            "same_sound_issue_data",
+            f"{trained_model}_epoch{use_model_epoch}",
+            date,
+            "npz",
+        )
+        npz_filename_list = glob.glob(os.path.join(npz_dir, f"test_0{test_num}", "*"))
+
+    # func_modeに応じて、異弦同音のデータを取得して保存
+    # func_mode = "pred_tab" → CNNの出力の方のデータを取得して保存
+    # func_mode = "graph_tab" → グラフの方のデータを取得して保存
+    for npz_file in npz_filename_list:
+        npz_save_filename = os.path.join(npz_save_dir, os.path.split(npz_file)[1])
+
         save_same_sound_issue_data_in_npz(
             new_npz_base_filename=npz_save_filename,
             existing_npz_path=npz_file,
-            mode="pred_tab",
+            func_mode=func_mode,
         )
 
-    for npz_file in npz_filename_list:
-        npz_save_filename = os.path.join(
-            npz_save_dir, os.path.split(npz_file)[1].split(".")[-2]
-        )
-        # その後に、教師データとグラフの出力で異弦同音を抽出して保存
-        save_same_sound_issue_data_in_npz(
-            new_npz_base_filename=npz_save_filename,
-            existing_npz_path=npz_file,
-            mode="graph_tab",
-        )
+        # for npz_file in npz_filename_list:
+        #     npz_save_filename = os.path.join(
+        #         npz_save_dir, os.path.split(npz_file)[1].split(".")[-2]
+        #     )
+        #     # その後に、教師データとグラフの出力で異弦同音を抽出して保存
+        #     save_same_sound_issue_data_in_npz(
+        #         new_npz_base_filename=npz_save_filename,
+        #         existing_npz_path=npz_file,
+        #         mode="graph_tab",
+        #     )
 
-        print(f"finished {os.path.split(npz_file)[1][:-4]}")
+        print(f"{func_mode} finished {os.path.split(npz_file)[1][:-4]}")
 
     return
 
@@ -347,11 +360,14 @@ def main():
     parser.add_argument(
         "directory_date", type=str, help="date of dag.py was carried out"
     )  # dag.pyでできたディレクトリの日付を指定する
+
+    parser.add_argument("func_mode", type=str, help="function mode argument")
     args = parser.parse_args()
 
     trained_model = args.model
     use_model_epoch = args.epoch
     date = args.directory_date
+    func_mode = args.func_mode
 
     mode = "tab"
     n_cores = 12
@@ -393,6 +409,7 @@ def main():
             trained_model=trained_model,
             use_model_epoch=use_model_epoch,
             date=date,
+            func_mode=func_mode,
         )
 
     return

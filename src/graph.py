@@ -132,8 +132,15 @@ if __name__ == "__main__":
 
     trained_model = args.model
     use_model_epoch = args.epoch
+    # npz_dir = os.path.join(
+    #     "result", "tab", f"{trained_model}_epoch{use_model_epoch}", "npz"
+    # )
     npz_dir = os.path.join(
-        "result", "tab", f"{trained_model}_epoch{use_model_epoch}", "npz"
+        "result",
+        "same_sound_issue_data",
+        "202304241804_epoch192",
+        "20231205_175025",
+        "npz",
     )
     # npz_filename_list = glob.glob(
     #         os.path.join(npz_dir, f"test_0{test_num}", "*"))
