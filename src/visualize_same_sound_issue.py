@@ -347,18 +347,18 @@ def visualize(npz_filename_list, kwargs):
 
         elif mode == "tab":
             plt.subplot(n_subplots, 1, subplot_counter)
-            plt.title("Ground truth note-level tablature")
+            plt.title("異弦同音 Ground truth tablature")
             plot_tab(same_sound_issue_tab, note_resolution)
             subplot_counter = subplot_counter + 1
 
             plt.subplot(n_subplots, 1, subplot_counter)
-            plt.title("Predicted note-level tablature")
+            plt.title("異弦同音 Predicted note-level tablature")
             plot_tab(same_sound_issue_pred_tab, note_resolution)
             subplot_counter = subplot_counter + 1
 
             # ダイクストラ法の描画用
             plt.subplot(n_subplots, 1, subplot_counter)
-            plt.title("Predicted graph edited tablature")
+            plt.title("異弦同音 Predicted graph edited tablature")
             plot_tab(same_sound_issue_graph_tab, note_resolution)
             subplot_counter = subplot_counter + 1
 
