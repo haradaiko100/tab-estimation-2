@@ -84,7 +84,9 @@ def get_and_save_same_sound_issue_data(
         )
 
     for npz_file in npz_filename_list:
-        npz_save_filename = os.path.join(npz_save_dir, os.path.split(npz_file)[1])
+        npz_save_filename = os.path.join(
+            npz_save_dir, os.path.split(npz_file)[1].split(".")[-2]
+        )
         # その後に、教師データとグラフの出力で異弦同音を抽出して保存
         save_same_sound_issue_data_in_npz(
             new_npz_base_filename=npz_save_filename,
