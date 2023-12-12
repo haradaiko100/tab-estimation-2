@@ -203,7 +203,7 @@ def calc_score(
     note_avg_tdr = note_sum_tdr / len(npz_filename_list)
 
     frame_graph_avg_tdr = frame_graph_sum_tdr / len(npz_filename_list)
-    note_graph_avg_tdr = note_graph_sum_tdr / len(npz_filename_list)
+    note_graph_avg_tdr = note_graph_sum_tdr / file_num
 
     frame_concat_precision, frame_concat_recall, frame_concat_f1 = calculate_metrics(
         frame_concat_pred, frame_concat_gt
