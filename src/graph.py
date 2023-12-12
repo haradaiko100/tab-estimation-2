@@ -16,6 +16,8 @@ from itertools import repeat
 import heapq
 import sys
 
+from calc_metrics_for_same_sound_data import TDR
+
 
 def main():
     parser = argparse.ArgumentParser(description="code for plotting results")
@@ -149,7 +151,23 @@ if __name__ == "__main__":
     npz_data = np.load(npz_filename_list[0])
     print(npz_filename_list[0])
     print(os.path.split(npz_filename_list[0])[1])
-    note_pred = npz_data["note_tab_pred"]
+    note_pred = npz_data["note_F0_gt"]
+
+
+    note_f0_gt = tab2pitch(npz_data["same_sound_issue_tab"])
+    tdr = TDR(
+        npz_data["same_sound_issue_graph_tab"],
+        npz_data["same_sound_issue_tab"],
+        note_f0_gt,
+    )
+
+    # tdr = TDR(
+    #     npz_data["note_tab_pred"],
+    #     npz_data["note_tab_gt"],
+    #     npz_data["note_F0_gt"],
+    # )
+
+    print("tdr: ",tdr)
 
     keys_list = list(npz_data.keys())
     print(keys_list)

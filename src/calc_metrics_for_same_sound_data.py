@@ -42,6 +42,9 @@ def TDR(tab_pred, tab_gt, F0_gt):
 
     TP_tab = np.multiply(tab_gt[:, :, :-1], tab_pred[:, :, :-1]).sum()
     TP_F0 = np.multiply(F0_gt, F0_from_tab_pred).sum()
+
+    if TP_F0 == 0:
+        raise ValueError("TP_F0 is 0, cannot calculate TDR")
     tdr = TP_tab / TP_F0
     return tdr
 
@@ -50,77 +53,35 @@ def calc_score(
     test_num,
     trained_model,
     use_model_epoch,
-    config_path,
     date,
-    plot_results=False,
-    input_as_random_noize=False,
-    make_notelvl_from_framelvl=False,
-    verbose=True,
 ):
-    with open(config_path) as f:
-        obj = yaml.safe_load(f)
-        note_resolution = obj["note_resolution"]
-        down_sampling_rate = obj["down_sampling_rate"]
-        bins_per_octave = obj["bins_per_octave"]
-        hop_length = obj["hop_length"]
-        cqt_n_bins = obj["cqt_n_bins"]
-        d_model = obj["d_model"]
-        encoder_heads = obj["encoder_heads"]
-        encoder_layers = obj["encoder_layers"]
-        input_feature_type = obj["input_feature_type"]
-        mode = obj["mode"]
-        encoder_type = obj["encoder_type"]
-        use_custom_decimation_func = obj["use_custom_decimation_func"]
-        use_conv_stack = obj["use_conv_stack"]
+    (
+        frame_sum_F0_from_tab_precision,
+        frame_sum_F0_from_tab_recall,
+        frame_sum_F0_from_tab_f1,
+    ) = (0, 0, 0)
 
-    kwargs = {
-        "note_resolution": note_resolution,
-        "down_sampling_rate": down_sampling_rate,
-        "hop_length": hop_length,
-        "bins_per_octave": bins_per_octave,
-    }
-    model_path = f"model/{trained_model}/testNo0{test_num}/epoch{use_model_epoch}.model"
-    existing_dev_files = glob.glob(f"visualize/dev/attn_map/0{test_num}/*")
-    for f in existing_dev_files:
-        os.remove(f)
+    (
+        note_sum_F0_from_tab_precision,
+        note_sum_F0_from_tab_recall,
+        note_sum_F0_from_tab_f1,
+    ) = (0, 0, 0)
 
-    if input_feature_type == "cqt":
-        n_bins = cqt_n_bins
-    elif input_feature_type == "melspec":
-        n_bins = 128
-
-    model = TabEstimator(
-        mode,
-        encoder_type,
-        use_custom_decimation_func,
-        use_conv_stack,
-        n_bins,
-        hop_length,
-        down_sampling_rate,
-        encoder_heads=encoder_heads,
-        encoder_layers=encoder_layers,
-    )
-    model.load_state_dict(torch.load(model_path, map_location=torch.device("cpu")))
-    model.eval()
+    (
+        note_sum_F0_from_tab_graph_precision,
+        note_sum_F0_from_tab_graph_recall,
+        note_sum_F0_from_tab_graph_f1,
+    ) = (0, 0, 0)
+    frame_sum_tdr, note_sum_tdr = 0, 0
+    frame_graph_sum_tdr, note_graph_sum_tdr = 0, 0
 
     frame_sum_precision, frame_sum_recall, frame_sum_f1 = 0, 0, 0
     note_sum_precision, note_sum_recall, note_sum_f1 = 0, 0, 0
-    if mode == "tab":
-        (
-            frame_sum_F0_from_tab_precision,
-            frame_sum_F0_from_tab_recall,
-            frame_sum_F0_from_tab_f1,
-        ) = (0, 0, 0)
-        (
-            note_sum_F0_from_tab_precision,
-            note_sum_F0_from_tab_recall,
-            note_sum_F0_from_tab_f1,
-        ) = (0, 0, 0)
-        frame_sum_tdr, note_sum_tdr = 0, 0
-    # test_data_path = os.path.join(
-    #     "data", "npz", f"original", "split", f"0{test_num}_*.npz"
-    # )
-    test_data_path = os.path.join(
+
+    frame_concat_pred = np.array([])
+    frame_concat_gt = np.array([])
+
+    npz_filename_path = os.path.join(
         "result",
         "same_sound_issue_data",
         f"{trained_model}_epoch{use_model_epoch}",
@@ -129,97 +90,62 @@ def calc_score(
         f"test_0{test_num}",
         f"0{test_num}_*.npz",
     )
-    test_data_list = np.array(glob.glob(test_data_path, recursive=True))
+    npz_filename_list = np.array(glob.glob(npz_filename_path, recursive=True))
     # every test file for loop start
     frame_concat_pred = np.array([])
     frame_concat_gt = np.array([])
 
-    for npz_filename in tqdm.tqdm(test_data_list):
-        npz_file = np.load(npz_filename)
-        len_in_notes = npz_file["len_in_notes"]
-        if input_feature_type == "cqt":
-            input_features = torch.from_numpy(npz_file["cqt"])
-        elif input_feature_type == "melspec":
-            input_features = torch.from_numpy(npz_file["mel_spec"])
-        input_features = torch.unsqueeze(input_features, 0)
+    file_num = len(npz_filename_list)
 
-        if mode == "F0":
-            note_gt = torch.from_numpy(npz_file["F0"])
-            frame_gt = torch.from_numpy(npz_file["frame_F0"])
+    for npz_file in npz_filename_list:
+        npz_data = np.load(npz_file)
+        note_pred = npz_data["note_tab_pred"]
+        note_gt = npz_data["note_tab_gt"]
 
-        elif mode == "tab":
-            note_gt = torch.from_numpy(npz_file["tab"])
-            frame_gt = torch.from_numpy(npz_file["frame_tab"])
+        frame_gt = npz_data["frame_tab_gt"]
+        frame_pred = npz_data["frame_tab_pred"]
 
-            note_F0_gt = npz_file["F0"]
-            frame_F0_gt = npz_file["frame_F0"]
-        else:
-            raise ValueError("mode must be either 'F0' or 'tab'")
+        note_F0_gt = npz_data["note_F0_gt"]
+        frame_F0_gt = npz_data["frame_F0_gt"]
 
-        bpm = torch.from_numpy(npz_file["tempo"])
-        bpm = torch.unsqueeze(bpm, 0)
+        # 異弦同音関連のデータ
+        same_sound_issue_tab = npz_data["same_sound_issue_tab"]
+        same_sound_issue_pred_tab = npz_data["same_sound_issue_pred_tab"]
+        same_sound_issue_graph_tab = npz_data["same_sound_issue_graph_tab"]
 
-        frame_len = np.arange(1)
-        note_len = np.arange(1)
-        frame_len[0] = input_features.shape[1]
-        note_len[0] = note_gt.shape[0]
+        # 異弦同音だけのデータであれば、CNNの方のTDRは必ず0になるから
+        # グラフの方のTDRを計算するだけでいい
+        note_F0_from_tab_graph_pred = tab2pitch(same_sound_issue_graph_tab)
 
-        frame_len = torch.zeros(1)
-        frame_len[0] = input_features.shape[1]
+        frame_tdr = TDR(frame_pred, frame_gt, frame_F0_gt)
+        note_tdr = TDR(note_pred, note_gt, note_F0_gt)
 
-        if input_as_random_noize == True:
-            input_features = torch.rand(input_features.shape)
+        try:
+            note_F0_gt_for_same_sound_issue = tab2pitch(same_sound_issue_tab)
+            note_graph_tdr = TDR(
+                same_sound_issue_graph_tab,
+                same_sound_issue_tab,
+                note_F0_gt_for_same_sound_issue,
+            )
 
-        # (batch, len, ...) -> (len, ...) & probability -> one-hot
-        input_features = torch.squeeze(input_features, 0).detach().numpy().copy()
-        if mode == "F0":
-            frame_pred = torch.squeeze(frame_pred, 0)
-            note_pred = torch.squeeze(note_pred, 0)
+            note_graph_sum_tdr += note_graph_tdr
+        except ValueError:
+            file_num -= 1
+        frame_note_tdr = TDR(frame_pred, frame_gt, frame_F0_gt)
 
-            frame_gt = frame_gt.detach().numpy()
-            note_gt = note_gt.detach().numpy()
+        frame_sum_tdr += frame_tdr
+        note_sum_tdr += note_tdr
 
-            frame_pred = np.where(frame_pred.detach().numpy() > 0.5, 1, 0)
-            note_pred = np.where(note_pred.detach().numpy() > 0.5, 1, 0)
+        frame_graph_sum_tdr += frame_note_tdr
 
-        elif mode == "tab":
-            frame_pred = torch.squeeze(frame_pred, 0)
-            argmax_index = np.argmax(frame_pred.detach().numpy(), axis=2)
-            frame_pred = np.zeros((len(frame_pred), 6, 21))
-            for frame in range(len(frame_pred)):
-                for string in range(6):
-                    frame_pred[frame, string, argmax_index[frame, string]] = 1
-            frame_F0_from_tab_pred = tab2pitch(frame_pred)
+        frame_pred = frame_pred[:, :, :-1].flatten()
+        frame_gt = frame_gt[:, :, :-1].flatten()
+        note_pred = note_pred[:, :, :-1].flatten()
+        note_gt = note_gt[:, :, :-1].flatten()
 
-            note_pred = torch.squeeze(note_pred, 0)
-            argmax_index = np.argmax(note_pred.detach().numpy(), axis=2)
-            note_pred = np.zeros((len(note_pred), 6, 21))
-            for note in range(len(note_pred)):
-                for string in range(6):
-                    note_pred[note, string, argmax_index[note, string]] = 1
-            note_F0_from_tab_pred = tab2pitch(note_pred)
+        note_F0_from_tab_graph_pred = note_F0_from_tab_graph_pred.flatten()
 
-            frame_gt = frame_gt.detach().numpy()
-            note_gt = note_gt.detach().numpy()
-
-            frame_tdr = TDR(frame_pred, frame_gt, frame_F0_gt)
-            note_tdr = TDR(note_pred, note_gt, note_F0_gt)
-
-            frame_sum_tdr += frame_tdr
-            note_sum_tdr += note_tdr
-
-        # flatten and calculate metrics
-        if mode == "tab":
-            # remove 'not played' class
-            frame_pred = frame_pred[:, :, :-1].flatten()
-            frame_gt = frame_gt[:, :, :-1].flatten()
-            note_pred = note_pred[:, :, :-1].flatten()
-            note_gt = note_gt[:, :, :-1].flatten()
-
-            frame_F0_from_tab_pred = frame_F0_from_tab_pred.flatten()
-            frame_F0_gt = frame_F0_gt.flatten()
-            note_F0_from_tab_pred = note_F0_from_tab_pred.flatten()
-            note_F0_gt = note_F0_gt.flatten()
+        note_F0_gt = note_F0_gt.flatten()
 
         frame_concat_pred = np.concatenate((frame_concat_pred, frame_pred), axis=None)
         frame_concat_gt = np.concatenate((frame_concat_gt, frame_gt), axis=None)
@@ -228,17 +154,12 @@ def calc_score(
             frame_pred, frame_gt
         )
         note_precision, note_recall, note_f1 = calculate_metrics(note_pred, note_gt)
-        if mode == "tab":
-            (
-                frame_F0_from_tab_precision,
-                frame_F0_from_tab_recall,
-                frame_F0_from_tab_f1,
-            ) = calculate_metrics(frame_F0_from_tab_pred, frame_F0_gt)
-            (
-                note_F0_from_tab_precision,
-                note_F0_from_tab_recall,
-                note_F0_from_tab_f1,
-            ) = calculate_metrics(note_F0_from_tab_pred, note_F0_gt)
+
+        (
+            note_F0_from_tab_graph_precision,
+            note_F0_from_tab_graph_recall,
+            note_F0_from_tab_graph_f1,
+        ) = calculate_metrics(note_F0_from_tab_graph_pred, note_F0_gt)
 
         frame_sum_precision += frame_precision
         frame_sum_recall += frame_recall
@@ -247,117 +168,94 @@ def calc_score(
         note_sum_precision += note_precision
         note_sum_recall += note_recall
         note_sum_f1 += note_f1
-        if mode == "tab":
-            frame_sum_F0_from_tab_precision += frame_F0_from_tab_precision
-            frame_sum_F0_from_tab_recall += frame_F0_from_tab_recall
-            frame_sum_F0_from_tab_f1 += frame_F0_from_tab_f1
 
-            note_sum_F0_from_tab_precision += note_F0_from_tab_precision
-            note_sum_F0_from_tab_recall += note_F0_from_tab_recall
-            note_sum_F0_from_tab_f1 += note_F0_from_tab_f1
+        note_sum_F0_from_tab_graph_precision += note_F0_from_tab_graph_precision
+        note_sum_F0_from_tab_graph_recall += note_F0_from_tab_graph_recall
+        note_sum_F0_from_tab_graph_f1 += note_F0_from_tab_graph_f1
 
-    frame_avg_precision = frame_sum_precision / len(test_data_list)
-    frame_avg_recall = frame_sum_recall / len(test_data_list)
-    frame_avg_f1 = frame_sum_f1 / len(test_data_list)
+        print(f"finished {os.path.split(npz_file)[1][:-4]}")
 
-    note_avg_precision = note_sum_precision / len(test_data_list)
-    note_avg_recall = note_sum_recall / len(test_data_list)
-    note_avg_f1 = note_sum_f1 / len(test_data_list)
+    frame_avg_precision = frame_sum_precision / len(npz_filename_list)
+    frame_avg_recall = frame_sum_recall / len(npz_filename_list)
+    frame_avg_f1 = frame_sum_f1 / len(npz_filename_list)
 
-    if mode == "tab":
-        frame_avg_F0_from_tab_precision = frame_sum_F0_from_tab_precision / len(
-            test_data_list
-        )
-        frame_avg_F0_from_tab_recall = frame_sum_F0_from_tab_recall / len(
-            test_data_list
-        )
-        frame_avg_F0_from_tab_f1 = frame_sum_F0_from_tab_f1 / len(test_data_list)
+    note_avg_precision = note_sum_precision / len(npz_filename_list)
+    note_avg_recall = note_sum_recall / len(npz_filename_list)
+    note_avg_f1 = note_sum_f1 / len(npz_filename_list)
 
-        note_avg_F0_from_tab_precision = note_sum_F0_from_tab_precision / len(
-            test_data_list
-        )
-        note_avg_F0_from_tab_recall = note_sum_F0_from_tab_recall / len(test_data_list)
-        note_avg_F0_from_tab_f1 = note_sum_F0_from_tab_f1 / len(test_data_list)
+    frame_avg_F0_from_tab_precision = frame_sum_F0_from_tab_precision / len(
+        npz_filename_list
+    )
+    frame_avg_F0_from_tab_recall = frame_sum_F0_from_tab_recall / len(npz_filename_list)
+    frame_avg_F0_from_tab_f1 = frame_sum_F0_from_tab_f1 / len(npz_filename_list)
 
-        frame_avg_tdr = frame_sum_tdr / len(test_data_list)
-        note_avg_tdr = note_sum_tdr / len(test_data_list)
+    note_avg_F0_from_tab_graph_precision = note_sum_F0_from_tab_graph_precision / len(
+        npz_filename_list
+    )
+    note_avg_F0_from_tab_graph_recall = note_sum_F0_from_tab_graph_recall / len(
+        npz_filename_list
+    )
+    note_avg_F0_from_tab_graph_f1 = note_sum_F0_from_tab_graph_f1 / len(
+        npz_filename_list
+    )
+
+    frame_avg_tdr = frame_sum_tdr / len(npz_filename_list)
+    note_avg_tdr = note_sum_tdr / len(npz_filename_list)
+
+    frame_graph_avg_tdr = frame_graph_sum_tdr / len(npz_filename_list)
+    note_graph_avg_tdr = note_graph_sum_tdr / len(npz_filename_list)
 
     frame_concat_precision, frame_concat_recall, frame_concat_f1 = calculate_metrics(
         frame_concat_pred, frame_concat_gt
     )
 
-    if mode == "F0":
-        result = pd.DataFrame(
+    result = pd.DataFrame(
+        [
             [
-                [
-                    frame_avg_precision,
-                    frame_avg_recall,
-                    frame_avg_f1,
-                    frame_concat_precision,
-                    frame_concat_recall,
-                    frame_concat_f1,
-                    note_avg_precision,
-                    note_avg_recall,
-                    note_avg_f1,
-                ]
-            ],
-            columns=[
-                "frame_segment_avg_F0_p",
-                "frame_segment_avg_F0_r",
-                "frame_segment_avg_F0_f",
-                "frame_frame_avg_F0_p",
-                "frame_frame_avg_F0_r",
-                "frame_frame_avg_F0_f",
-                "note_avg_F0_p",
-                "note_avg_F0_r",
-                "note_avg_F0_f",
-            ],
-            index=[f"No0{test_num}"],
-        )
-    elif mode == "tab":
-        result = pd.DataFrame(
-            [
-                [
-                    frame_avg_precision,
-                    frame_avg_recall,
-                    frame_avg_f1,
-                    frame_concat_precision,
-                    frame_concat_recall,
-                    frame_concat_f1,
-                    note_avg_precision,
-                    note_avg_recall,
-                    note_avg_f1,
-                    frame_avg_F0_from_tab_precision,
-                    frame_avg_F0_from_tab_recall,
-                    frame_avg_F0_from_tab_f1,
-                    note_avg_F0_from_tab_precision,
-                    note_avg_F0_from_tab_recall,
-                    note_avg_F0_from_tab_f1,
-                    frame_avg_tdr,
-                    note_avg_tdr,
-                ]
-            ],
-            columns=[
-                "frame_segment_avg_tab_p",
-                "frame_segment_avg_tab_r",
-                "frame_segment_avg_tab_f",
-                "frame_frame_avg_tab_p",
-                "frame_frame_avg_tab_r",
-                "frame_frame_avg_tab_f",
-                "note_avg_tab_p",
-                "note_avg_tab_r",
-                "note_avg_tab_f",
-                "frame_avg_F0_from_tab_p",
-                "frame_avg_F0_from_tab_r",
-                "frame_avg_F0_from_tab_f",
-                "note_avg_F0_from_tab_p",
-                "note_avg_F0_from_tab_r",
-                "note_avg_F0_from_tab_f",
-                "frame_avg_tdr",
-                "note_avg_tdr",
-            ],
-            index=[f"No0{test_num}"],
-        )
+                frame_avg_precision,
+                frame_avg_recall,
+                frame_avg_f1,
+                frame_concat_precision,
+                frame_concat_recall,
+                frame_concat_f1,
+                note_avg_precision,
+                note_avg_recall,
+                note_avg_f1,
+                frame_avg_F0_from_tab_precision,
+                frame_avg_F0_from_tab_recall,
+                frame_avg_F0_from_tab_f1,
+                note_avg_F0_from_tab_graph_precision,
+                note_avg_F0_from_tab_graph_recall,
+                note_avg_F0_from_tab_graph_f1,
+                frame_avg_tdr,
+                note_avg_tdr,
+                frame_graph_avg_tdr,
+                note_graph_avg_tdr,
+            ]
+        ],
+        columns=[
+            "frame_segment_avg_tab_p",
+            "frame_segment_avg_tab_r",
+            "frame_segment_avg_tab_f",
+            "frame_frame_avg_tab_p",
+            "frame_frame_avg_tab_r",
+            "frame_frame_avg_tab_f",
+            "note_avg_tab_p",
+            "note_avg_tab_r",
+            "note_avg_tab_f",
+            "frame_avg_F0_from_tab_p",
+            "frame_avg_F0_from_tab_r",
+            "frame_avg_F0_from_tab_f",
+            "note_avg_F0_from_tab_graph_p",
+            "note_avg_F0_from_tab_graph_r",
+            "note_avg_F0_from_tab_graph_f",
+            "frame_avg_tdr",
+            "note_avg_tdr",
+            "frame_graph_avg_tdr",
+            "note_graph_avg_tdr",
+        ],
+        index=[f"No0{test_num}"],
+    )
     return result
 
 
@@ -413,11 +311,7 @@ def main():
                 test_num,
                 trained_model,
                 use_model_epoch,
-                config_path,
-                plot_results=plot_results,
-                input_as_random_noize=input_as_random_noize,
-                make_notelvl_from_framelvl=make_notelvl_from_framelvl,
-                verbose=verbose,
+                date=date,
             )
         )
     result = result.append(result.describe()[1:3])
